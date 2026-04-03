@@ -159,19 +159,37 @@ def visualize_dataset(
             rr.set_time("timestamp", timestamp=batch["timestamp"][i].item())
 
             # display each camera image
-            for key in dataset.meta.camera_keys:
+            camera_keys = list(dataset.meta.camera_keys)
+            for key in ["image", "wrist_image"]:
+                if key in batch and key not in camera_keys:
+                    camera_keys.append(key)
+
+            for key in camera_keys:
                 # TODO(rcadene): add `.compress()`? is it lossless?
                 rr.log(key, rr.Image(to_hwc_uint8_numpy(batch[key][i])))
 
             # display each dimension of action space (e.g. actuators command)
-            if "action" in batch:
-                for dim_idx, val in enumerate(batch["action"][i]):
-                    rr.log(f"action/{dim_idx}", rr.Scalar(val.item()))
+            action_key = "action" if "action" in batch else "actions" if "actions" in batch else None
+            if action_key is not None:
+                for dim_idx, val in enumerate(batch[action_key][i]):
+                    rr.log(f"action/{dim_idx}", rr.Scalars(val.item()))
 
             # display each dimension of observed state space (e.g. agent position in joint space)
-            if "observation.state" in batch:
-                for dim_idx, val in enumerate(batch["observation.state"][i]):
-                    rr.log(f"state/{dim_idx}", rr.Scalar(val.item()))
+            state_key = "observation.state" if "observation.state" in batch else "state" if "state" in batch else None
+            if state_key is not None:
+                for dim_idx, val in enumerate(batch[state_key][i]):
+                    rr.log(f"state/{dim_idx}", rr.Scalars(val.item()))
+
+            task_key = "task" if "task" in batch else "language_instruction" if "language_instruction" in batch else None
+            if task_key is not None:
+                task_val = batch[task_key][i]
+                if isinstance(task_val, bytes):
+                    task_val = task_val.decode("utf-8", errors="replace")
+                elif isinstance(task_val, torch.Tensor):
+                    task_val = str(task_val.tolist())
+                else:
+                    task_val = str(task_val)
+                rr.log("task", rr.TextLog(task_val))
 
             if "next.done" in batch:
                 rr.log("next.done", rr.Scalar(batch["next.done"][i].item()))
