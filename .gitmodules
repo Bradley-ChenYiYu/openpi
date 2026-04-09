@@ -4,6 +4,6 @@
 [submodule "third_party/libero"]
 	path = third_party/libero
 	url = https://github.com/Lifelong-Robot-Learning/LIBERO.git
-[submodule "/home/shared/openpi/ros2_ws/src/rosbag2video"]
-	path = /home/shared/openpi/ros2_ws/src/rosbag2video
+[submodule "scripts/rosbag-to-lerobot/rosbag2video"]
+	path = scripts/rosbag-to-lerobot/rosbag2video
 	url = git@github.com:Bradley-ChenYiYu/rosbag2video.git

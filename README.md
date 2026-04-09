@@ -130,6 +130,8 @@ We will fine-tune the $\pi_{0.5}$ model on the [LIBERO dataset](https://libero-p
 
 ### 1. Convert your data to a LeRobot dataset
 
+**Yiyu from NCKU Robotics Lab:** I've written some scripts to convert rosbag2 to LeRobot Data in this [section](#single-rosbag2-to-lerobot-data).  
+
 We provide a minimal example script for converting LIBERO data to a LeRobot dataset in [`examples/libero/convert_libero_data_to_lerobot.py`](examples/libero/convert_libero_data_to_lerobot.py). You can easily modify it to convert your own data! You can download the raw LIBERO dataset from [here](https://huggingface.co/datasets/openvla/modified_libero_rlds), and run the script with:
 
 ```bash
@@ -321,3 +323,42 @@ We will collect common issues and their solutions here. If you encounter an issu
 | Import errors when running examples       | Make sure you've installed all dependencies with `uv sync`. Some examples may have additional requirements listed in their READMEs.                    |
 | Action dimensions mismatch                | Verify your data processing transforms match the expected input/output dimensions of your robot. Check the action space definitions in your policy classes.                                  |
 | Diverging training loss                            | Check the `q01`, `q99`, and `std` values in `norm_stats.json` for your dataset. Certain dimensions that are rarely used can end up with very small `q01`, `q99`, or `std` values, leading to huge states and actions after normalization. You can manually adjust the norm stats as a workaround. |
+
+## Yiyu's Appendix  
+
+### Single rosbag2 to LeRobot data  
+
+1. (Optional) Generate task prompt using your Ollama model:  
+
+    - Generate mp4 from rosbag:  
+
+    ```bash
+    python3 scripts/rosbag2video/rosbag2video.py -v -t {ROS2_IMAGE_TOPIC}
+     -o {VIDEO_NAME}.mp4 {BAG_FOLDER}
+    ```
+
+    - Gnerate prompt:    
+        - Set `VIDEO_PATH`, `OLLAMA_URL`, and `MODEL` in the script.  
+    
+    ```bash
+    python3 scripts/rosbag-to-lerobot/generate_vid_prompt_ollama.py
+    ```
+
+2. Copy and edit configs:  
+
+    - *scripts/rosbag-to-lerobot/config/metadata.example.yaml*  
+    - *scripts/rosbag-to-lerobot/config/topic_mapping.example.yaml*  
+
+3. Convert rosbag2 to LeRobot data:  
+
+    ```bash
+    uv run scripts/rosbag-to-lerobot/convert_rosbag_to_lerobot.py --input-bag-path {YOUR_ROSBAG} --repo-id {HF_USER}/{DATA_NAME} --robot-type {ROBOT_NAME} --fps 3 --config-path  {PATH_OF_your_topic_mapping.yaml} --metadata-path {PATH_OF_your_metadata.yaml} --force-clean-output
+    ```
+
+4. (Optional) View your LeRobot data:  
+
+    ```bash
+    uv run scripts/rosbag-to-lerobot/visualize_dataset.py --mode distant --repo-id {HF_USER}/{DATA_NAME} --root {YOUR_DATA_PATH} --episode-index 0
+    ```
+
+    - {YOUR_DATA_PATH} default at `/home/{USER}/.cache/huggingface/lerobot/{HF_USER}/{DATA_NAME}/`  

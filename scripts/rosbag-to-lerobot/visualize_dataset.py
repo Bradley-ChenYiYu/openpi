@@ -254,8 +254,11 @@ def main():
     parser.add_argument(
         "--num-workers",
         type=int,
-        default=4,
-        help="Number of processes of Dataloader for loading the data.",
+        default=0,
+        help=(
+            "Number of DataLoader worker processes. "
+            "Use 0 on systems with small /dev/shm (e.g. default Docker) to avoid bus errors."
+        ),
     )
     parser.add_argument(
         "--mode",

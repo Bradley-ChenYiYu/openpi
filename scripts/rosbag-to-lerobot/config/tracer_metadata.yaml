@@ -1,0 +1,10 @@
+# Optional metadata file for task text and episode-level tags.
+# One bag directory maps to one episode.
+
+default_task: pick and place block
+
+episodes:
+  rosbag2_2025_09_25-13_49_34:
+    task: walk down the hallway, turn to look at a marker on the wall, then turn back to face a fire extinguisher cabinet
+    tags: [demo, train]
+    split: train
