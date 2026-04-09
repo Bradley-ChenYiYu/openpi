@@ -716,7 +716,7 @@ def create_dataset(
     if force_clean and output_path.exists():
         shutil.rmtree(output_path)
     elif output_path.exists():
-        raise FileExistsError(f"Output dataset directory already exists: {output_path}. Use --force-clean-output to overwrite.")
+        return LeRobotDataset(repo_id)
 
     features: dict[str, Any] = {
         "observation.state": {

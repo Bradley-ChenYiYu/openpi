@@ -102,7 +102,7 @@ def to_hwc_uint8_numpy(chw_float32_torch: torch.Tensor) -> np.ndarray:
 
 def visualize_dataset(
     dataset: LeRobotDataset,
-    episode_index: int,
+    episode_index: int | None = None,
     batch_size: int = 32,
     num_workers: int = 0,
     mode: str = "local",
@@ -117,15 +117,23 @@ def visualize_dataset(
         )
 
     repo_id = dataset.repo_id
+    episode_name = f"episode_{episode_index}" if episode_index is not None else "all_episodes"
 
     logging.info("Loading dataloader")
-    episode_sampler = EpisodeSampler(dataset, episode_index)
-    dataloader = torch.utils.data.DataLoader(
-        dataset,
-        num_workers=num_workers,
-        batch_size=batch_size,
-        sampler=episode_sampler,
-    )
+    if episode_index is None:
+        dataloader = torch.utils.data.DataLoader(
+            dataset,
+            num_workers=num_workers,
+            batch_size=batch_size,
+        )
+    else:
+        episode_sampler = EpisodeSampler(dataset, episode_index)
+        dataloader = torch.utils.data.DataLoader(
+            dataset,
+            num_workers=num_workers,
+            batch_size=batch_size,
+            sampler=episode_sampler,
+        )
 
     logging.info("Starting Rerun")
 
@@ -133,7 +141,7 @@ def visualize_dataset(
         raise ValueError(mode)
 
     spawn_local_viewer = mode == "local" and not save
-    rr.init(f"{repo_id}/episode_{episode_index}", spawn=spawn_local_viewer)
+    rr.init(f"{repo_id}/{episode_name}", spawn=spawn_local_viewer)
 
     # Manually call python garbage collector after `rr.init` to avoid hanging in a blocking flush
     # when iterating on a dataloader with `num_workers` > 0
@@ -205,7 +213,7 @@ def visualize_dataset(
         output_dir = Path(output_dir)
         output_dir.mkdir(parents=True, exist_ok=True)
         repo_id_str = repo_id.replace("/", "_")
-        rrd_path = output_dir / f"{repo_id_str}_episode_{episode_index}.rrd"
+        rrd_path = output_dir / f"{repo_id_str}_{episode_name}.rrd"
         rr.save(rrd_path)
         return rrd_path
 
@@ -230,8 +238,8 @@ def main():
     parser.add_argument(
         "--episode-index",
         type=int,
-        required=True,
-        help="Episode to visualize.",
+        default=None,
+        help="Episode to visualize. If omitted, visualize all episodes in dataset order.",
     )
     parser.add_argument(
         "--root",
