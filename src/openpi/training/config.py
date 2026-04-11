@@ -975,7 +975,7 @@ _CONFIGS = [
         ),
         weight_loader=weight_loaders.CheckpointWeightLoader("gs://openpi-assets/checkpoints/pi0_base/params"),
         num_train_steps=5_000,
-        batch_size=32,
+        batch_size=8,
         num_workers=0,
     ),
     #
