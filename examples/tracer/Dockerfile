@@ -25,6 +25,7 @@ RUN apt-get update && \
     udev \
 && apt-get install -y \
     python3-pip \
+    ros-humble-realsense2-* \
 && rm -rf /var/lib/apt/lists/*
 # Removed Packages: 
     # ros-$ROS_DISTRO-rplidar-ros \
