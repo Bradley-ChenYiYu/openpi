@@ -362,3 +362,27 @@ We will collect common issues and their solutions here. If you encounter an issu
     ```
 
     - {YOUR_DATA_PATH} default at `/home/{USER}/.cache/huggingface/lerobot/{HF_USER}/{DATA_NAME}/`  
+
+### Training for Tracer  
+
+1. Login wandb  
+
+    ```bash
+    export WANDB_API_KEY=
+    ```
+
+    ```bash
+    uv run wandb login
+    ```
+
+2. Compute norm stats  
+
+    ```bash
+    uv run scripts/compute_norm_stats.py --config-name pi0_tracer_finetune
+    ```
+
+3. Run training script  
+
+    ```bash
+    XLA_PYTHON_CLIENT_MEM_FRACTION=0.9 nohup uv run scripts/train.py pi0_tracer_scratch --exp-name=my_experiment_tracer --overwrite > train_output.log 2>&1 &
+    ```

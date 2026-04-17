@@ -217,6 +217,7 @@ class PaliGemmaWithExpertModel(nn.Module):
                     layer = models[i].layers[layer_idx]
                     end_pos = start_pos + hidden_states.shape[1]
 
+                    # Apply the output projection for each expert(VLM and action expert) - Yiyu annotates
                     if att_output.dtype != layer.self_attn.o_proj.weight.dtype:
                         att_output = att_output.to(layer.self_attn.o_proj.weight.dtype)
                     out_emb = layer.self_attn.o_proj(att_output[:, start_pos:end_pos])
@@ -229,6 +230,7 @@ class PaliGemmaWithExpertModel(nn.Module):
                     if layer.mlp.up_proj.weight.dtype == torch.bfloat16:
                         out_emb = out_emb.to(dtype=torch.bfloat16)
 
+                    # Feed-forward network (ffn) - Yiyu annotates
                     out_emb = layer.mlp(out_emb)
                     # second residual
                     out_emb = modeling_gemma._gated_residual(after_first_residual, out_emb, gate)  # noqa: SLF001
