@@ -12,7 +12,11 @@ Usage:
 1. Connect to ollama server:
     ssh -R 11434:localhost:11434 your_ollama_server_user@your_ollama_server_ip
 2. Run this script:
-    python3 generate_vid_prompt_ollama.py
+    ```
+    uv run scripts/rosbag-to-lerobot/generate_vid_prompt_ollama.py \
+    --metadata-path /home/shared/openpi/scripts/rosbag-to-lerobot/config/tracer_metadata.yaml  \
+    --parent-dir /home/shared/openpi/rosbag_dir/
+    ```
 '''
 
 # Configuration
@@ -134,6 +138,62 @@ def infer_episode_name(video_path: str) -> str:
         return parent_name
     return Path(video_path).stem
 
+
+def find_video_paths(parent_dir: str) -> list[Path]:
+    parent_path = Path(parent_dir)
+    if not parent_path.exists():
+        raise FileNotFoundError(f"Parent directory does not exist: {parent_path}")
+    if not parent_path.is_dir():
+        raise ValueError(f"Parent path must be a directory: {parent_path}")
+
+    video_paths: list[Path] = []
+    for child_dir in sorted(path for path in parent_path.iterdir() if path.is_dir()):
+        video_paths.extend(
+            sorted(
+                path
+                for path in child_dir.rglob("*")
+                if path.is_file() and path.suffix.lower() in {".mp4", ".mov", ".mkv", ".avi"}
+            )
+        )
+
+    if not video_paths:
+        raise ValueError(f"No video files found under: {parent_path}")
+    return video_paths
+
+
+def process_and_maybe_append_video(
+    video_path: str,
+    target_fps: int,
+    model_name: str,
+    api_url: str,
+    prompt: str,
+    metadata_path: str | None,
+    task_override: str | None,
+    tags: list[str] | None,
+    split: str | None,
+    overwrite: bool,
+    episode_name: str | None = None,
+) -> str | None:
+    generated_task = process_video(video_path, target_fps, model_name, api_url, prompt)
+    task_to_store = task_override or generated_task
+
+    if metadata_path is not None:
+        if not task_to_store:
+            raise ValueError(
+                "No task text available to append. Provide --task or ensure Ollama returns text."
+            )
+        resolved_episode_name = episode_name or infer_episode_name(video_path)
+        append_episode_metadata(
+            metadata_path=metadata_path,
+            episode_name=resolved_episode_name,
+            task=task_to_store,
+            tags=tags,
+            split=split,
+            overwrite=overwrite,
+        )
+
+    return task_to_store
+
 def process_video(video_path, target_fps, model_name, api_url, prompt):
     print(f"Processing video: {video_path}")
     
@@ -214,6 +274,11 @@ def parse_args():
         )
     )
     parser.add_argument("--video-path", default=VIDEO_PATH)
+    parser.add_argument(
+        "--parent-dir",
+        default=None,
+        help="Grandparent folder containing one subfolder per episode, each with one or more videos.",
+    )
     parser.add_argument("--model", default=MODEL)
     parser.add_argument("--ollama-url", default=OLLAMA_URL)
     parser.add_argument("--target-fps", type=int, default=TARGET_FPS)
@@ -258,27 +323,41 @@ def parse_args():
 
 if __name__ == "__main__":
     args = parse_args()
-    generated_task = process_video(
-        args.video_path,
-        args.target_fps,
-        args.model,
-        args.ollama_url,
-        args.prompt,
-    )
 
     append_requested = args.append_metadata or "--metadata-path" in sys.argv
-    if append_requested:
-        task_to_store = args.task or generated_task
-        if not task_to_store:
-            raise ValueError(
-                "No task text available to append. Provide --task or ensure Ollama returns text."
+    metadata_path = args.metadata_path if append_requested else None
+
+    if args.parent_dir:
+        if args.episode_name is not None:
+            raise ValueError("--episode-name cannot be used with --parent-dir batch mode.")
+
+        video_paths = find_video_paths(args.parent_dir)
+        print(f"Found {len(video_paths)} video files under {args.parent_dir}")
+        for video_path in video_paths:
+            print(f"\n=== Processing {video_path} ===")
+            process_and_maybe_append_video(
+                video_path=str(video_path),
+                target_fps=args.target_fps,
+                model_name=args.model,
+                api_url=args.ollama_url,
+                prompt=args.prompt,
+                metadata_path=metadata_path,
+                task_override=args.task,
+                tags=parse_tags(args.tags),
+                split=args.split,
+                overwrite=args.overwrite_episode,
             )
-        episode_name = args.episode_name or infer_episode_name(args.video_path)
-        append_episode_metadata(
-            metadata_path=args.metadata_path,
-            episode_name=episode_name,
-            task=task_to_store,
+    else:
+        process_and_maybe_append_video(
+            video_path=args.video_path,
+            target_fps=args.target_fps,
+            model_name=args.model,
+            api_url=args.ollama_url,
+            prompt=args.prompt,
+            metadata_path=metadata_path,
+            task_override=args.task,
             tags=parse_tags(args.tags),
             split=args.split,
             overwrite=args.overwrite_episode,
+            episode_name=args.episode_name,
         )
