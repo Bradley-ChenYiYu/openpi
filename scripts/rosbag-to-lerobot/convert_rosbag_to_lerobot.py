@@ -19,11 +19,11 @@ Usage:
 
     ```bash
     uv run scripts/rosbag-to-lerobot/convert_rosbag_to_lerobot.py \
-        --input-bag-path /home/shared/rosbag2_2025_09_25-13_49_34/ \
+        --input-bag-path rosbag_dir/ \
         --repo-id brad/tracer_data --robot-type tracer \
-        --fps 3 --config-path ros2_ws/src/rosbag_to_lerobot/config/tracer_topic_mapping.yaml \
-        --metadata-path ros2_ws/src/rosbag_to_lerobot/config/tracer_metadata.yaml \
-        --force-clean-output --log-level DEBUG
+        --fps 50 --config-path scripts/rosbag-to-lerobot/config/tracer_topic_mapping.yaml \
+        --metadata-path scripts/rosbag-to-lerobot/config/tracer_metadata.yaml \
+        --force-clean-output
     ```
 
 '''
@@ -716,6 +716,10 @@ def create_dataset(
     if force_clean and output_path.exists():
         shutil.rmtree(output_path)
     elif output_path.exists():
+        # raise FileExistsError(
+        #     "Output dataset already exists at "
+        #     f"{output_path}. Re-run with --force-clean-output to overwrite."
+        # )
         return LeRobotDataset(repo_id)
 
     features: dict[str, Any] = {
@@ -741,6 +745,7 @@ def create_dataset(
 
     return LeRobotDataset.create(
         repo_id=repo_id,
+        root=output_path,
         robot_type=robot_type,
         fps=fps,
         features=features,

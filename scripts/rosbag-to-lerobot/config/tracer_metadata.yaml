@@ -4,7 +4,27 @@
 default_task: pick and place block
 
 episodes:
-  rosbag2_2025_09_25-13_49_34:
-    task: walk down the hallway, turn to look at a marker on the wall, then turn back to face a fire extinguisher cabinet
-    tags: [demo, train]
-    split: train
+  rosbag2_2026_04_17-13_41_55:
+    task: Navigate to the table with the white cup and brown paper bag.
+  rosbag2_2026_04_17-13_43_32:
+    task: Navigate to the table with the white cup and brown paper bag.
+  rosbag2_2026_04_17-13_47_50:
+    task: Navigate to the table with the cups.
+  rosbag2_2026_04_17-13_49_44:
+    task: Navigate to the table with the white cup and brown paper bag.
+  rosbag2_2026_04_17-13_51_09:
+    task: Navigate to the black table.
+  rosbag2_2026_04_17-13_52_20:
+    task: Navigate to the table with the blue water jug.
+  rosbag2_2026_04_17-13_54_21:
+    task: Navigate to the table with the white cup and brown paper bag.
+  rosbag2_2026_04_17-13_55_45:
+    task: Navigate to the table with the paper cups.
+  rosbag2_2026_04_17-13_57_20:
+    task: Navigate to the table with the brown paper bag.
+  rosbag2_2026_04_17-13_59_36:
+    task: Navigate to the table with the white cup and brown paper bag.
+  rosbag2_2026_04_17-14_00_42:
+    task: Navigate to the table with the brown paper cups and white pitchers.
+  rosbag2_2026_04_17-14_02_08:
+    task: Navigate to the table with the white cup and brown paper bag.

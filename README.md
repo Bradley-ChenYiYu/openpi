@@ -352,7 +352,7 @@ We will collect common issues and their solutions here. If you encounter an issu
 3. Convert rosbag2 to LeRobot data:  
 
     ```bash
-    uv run scripts/rosbag-to-lerobot/convert_rosbag_to_lerobot.py --input-bag-path {YOUR_ROSBAG} --repo-id {HF_USER}/{DATA_NAME} --robot-type {ROBOT_NAME} --fps 3 --config-path  {PATH_OF_your_topic_mapping.yaml} --metadata-path {PATH_OF_your_metadata.yaml} --force-clean-output
+    uv run scripts/rosbag-to-lerobot/convert_rosbag_to_lerobot.py --input-bag-path {YOUR_ROSBAG/PARENT_ROSBAGS} --repo-id {HF_USER}/{DATA_NAME} --robot-type {ROBOT_NAME} --fps 50 --config-path  {PATH_OF_your_topic_mapping.yaml} --metadata-path {PATH_OF_your_metadata.yaml} --force-clean-output
     ```
 
 4. (Optional) View your LeRobot data:  
@@ -384,5 +384,5 @@ We will collect common issues and their solutions here. If you encounter an issu
 3. Run training script  
 
     ```bash
-    XLA_PYTHON_CLIENT_MEM_FRACTION=0.9 nohup uv run scripts/train.py pi0_tracer_scratch --exp-name=my_experiment_tracer --overwrite > train_output.log 2>&1 &
+    XLA_PYTHON_CLIENT_MEM_FRACTION=0.9 nohup uv run scripts/train.py pi0_tracer_finetune --exp-name=my_experiment_tracer --overwrite > train_output.log 2>&1 &
     ```
