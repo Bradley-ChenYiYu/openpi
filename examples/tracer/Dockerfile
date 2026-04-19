@@ -59,7 +59,10 @@ RUN sudo usermod --append --groups plugdev $USERNAME
 # Install python packages
 # COPY requirements.txt /ros2_ws/Docker/requirements.txt
 # RUN pip install -r /ros2_ws/Docker/requirements.txt
-RUN python3 -m pip install --no-cache-dir msgpack 'websockets>=11.0'
+RUN python3 -m pip install --no-cache-dir --upgrade \
+    'typing_extensions>=4.4.0' \
+    msgpack \
+    'websockets>=11.0'
 
 # bashrc: Source the ROS setup file and use color prompt
 RUN echo "source /opt/ros/${ROS_DISTRO}/setup.bash" >> ~/.bashrc && \
