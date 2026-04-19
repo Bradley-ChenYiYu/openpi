@@ -15,6 +15,7 @@ dependencies = [
     "fsspec[gcs]>=2024.6.0",
     "gym-aloha>=0.1.1",
     "imageio>=2.36.1",
+    "imageio-ffmpeg>=0.5.1",
     "jax[cuda12]==0.5.3",
     "jaxtyping==0.2.36",
     "lerobot",
@@ -38,6 +39,7 @@ dependencies = [
     "rich>=14.0.0",
     "polars>=1.30.0",
     "rosbags>=0.11.0",
+    "ruamel.yaml>=0.18.10",
 ]
 
 
