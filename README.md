@@ -326,28 +326,47 @@ We will collect common issues and their solutions here. If you encounter an issu
 
 ## Yiyu's Appendix  
 
-### Single rosbag2 to LeRobot data  
+### Data Collection with rosbag  
 
-1. (Optional) Generate task prompt using your Ollama model:  
-
-    - Generate mp4 from rosbag:  
+1. Launch tracer and sensors:  
 
     ```bash
-    python3 scripts/rosbag2video/rosbag2video.py -v -t {ROS2_IMAGE_TOPIC}
-     -o {VIDEO_NAME}.mp4 {BAG_FOLDER}
+    ros2 launch tracer_base tracer_bringup.launch.py
     ```
 
-    - Gnerate prompt:    
-        - Set `VIDEO_PATH`, `OLLAMA_URL`, and `MODEL` in the script.  
+2. Start recording:  
     
+    - `-b`: $2\times 1024^3$ bytes  
+
     ```bash
-    python3 scripts/rosbag-to-lerobot/generate_vid_prompt_ollama.py
+    ros2 bag record -b 2147483648 /cmd_vel /odom /camera/camera/color/image_raw
     ```
 
-2. Copy and edit configs:  
+### Multi-rosbag to LeRobot data  
+
+1. Copy and edit configs:  
 
     - *scripts/rosbag-to-lerobot/config/metadata.example.yaml*  
     - *scripts/rosbag-to-lerobot/config/topic_mapping.example.yaml*  
+
+2. (Optional) Generate task prompt using your Ollama model:  
+
+    - Generate mp4 from rosbag:  
+        - `-r`: fps  
+
+    ```bash
+    uv run scripts/rosbag-to-lerobot/rosbag2video/rosbag2video.py -r 50 rosbag_dir/
+    ```
+
+    - Gnerate prompt:    
+        - Set `OLLAMA_URL`, and `MODEL` in the script.  
+        - `--metadata-path`: File to write prompt to  
+    
+    ```bash
+    uv run scripts/rosbag-to-lerobot/generate_vid_prompt_ollama.py \
+    --metadata-path scripts/rosbag-to-lerobot/config/tracer_metadata.yaml  \
+    --parent-dir rosbag_dir/
+    ```
 
 3. Convert rosbag2 to LeRobot data:  
 
@@ -362,6 +381,7 @@ We will collect common issues and their solutions here. If you encounter an issu
     ```
 
     - {YOUR_DATA_PATH} default at `/home/{USER}/.cache/huggingface/lerobot/{HF_USER}/{DATA_NAME}/`  
+    - Remember to forward port `--web-port` and `--ws-port` if running in remote server.  
 
 ### Training for Tracer  
 
