@@ -386,3 +386,37 @@ We will collect common issues and their solutions here. If you encounter an issu
     ```bash
     XLA_PYTHON_CLIENT_MEM_FRACTION=0.9 nohup uv run scripts/train.py pi0_tracer_finetune --exp-name=my_experiment_tracer --overwrite > train_output.log 2>&1 &
     ```
+
+### Inference for Tracer in ROS2  
+
+1. Compose docker container for Pi server and ROS2 workspace:  
+
+    ```bash
+    docker compose -f examples/tracer/compose.yml up
+    ```
+
+2. Log in to the container:  
+
+    ```bash
+    docker exec -it {CONTAINER_NAME} bash
+    ```
+    - OpenPi container: tracer-openpi_server-1  
+    - ROS2 container: openpi_tracer  
+
+3. Start the server (OpenPi container)  
+
+    ```bash
+    uv run scripts/serve_policy.py policy:checkpoint --policy.config=pi0_tracer_finetune --policy.dir=checkpoints/pi0_tracer_finetune/tracer_soc3f_cafe_batch32/4999
+    ```
+
+4. Start the robot and sensor nodes (ROS2 container)  
+
+    ```bash
+    colcon build --packages-select tracer_base && source install/setup.bash && ros2 launch tracer_base tracer_bringup.launch.py
+    ```
+
+5. Start the navigation (ROS2 container)  
+
+    ```bash
+    colcon build --packages-select pi_bridge &&  source install/setup.bash && ros2 launch pi_bridge websocket_bridge.launch.py prompt:="Navigate to the table with the paper cups" inferred_cmd_topic:=/cmd_vel
+    ```
