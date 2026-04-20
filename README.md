@@ -360,6 +360,7 @@ We will collect common issues and their solutions here. If you encounter an issu
 
     - Gnerate prompt:    
         - Set `OLLAMA_URL`, and `MODEL` in the script.  
+        - Use [ssh_bridge_ollama.sh](scripts/rosbag-to-lerobot/ssh_bridge_ollama.sh) if your convert script and ollama server are on A100  
         - `--metadata-path`: File to write prompt to  
     
     ```bash
