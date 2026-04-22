@@ -183,6 +183,7 @@ class PiWebsocketBridgeNode(Node):
         self.declare_parameter("image_topic_type", "image")
         self.declare_parameter("inferred_cmd_topic", "/pi_bridge/inferred_cmd_vel")
         self.declare_parameter("ack_topic", "/pi_bridge/control_ack")
+        self.declare_parameter("prefix_text_topic", "/pi_bridge/prefix_text")
         self.declare_parameter("raw_response_topic", "/pi_bridge/raw_response")
         self.declare_parameter("diagnostics_topic", "/pi_bridge/diagnostics")
         self.declare_parameter("queue_size", 10)
@@ -231,11 +232,13 @@ class PiWebsocketBridgeNode(Node):
 
         inferred_cmd_topic = self.get_parameter("inferred_cmd_topic").value
         ack_topic = self.get_parameter("ack_topic").value
+        prefix_text_topic = self.get_parameter("prefix_text_topic").value
         raw_response_topic = self.get_parameter("raw_response_topic").value
         diagnostics_topic = self.get_parameter("diagnostics_topic").value
 
         self._inferred_cmd_pub = self.create_publisher(Twist, inferred_cmd_topic, self._queue_size)
         self._ack_pub = self.create_publisher(String, ack_topic, self._queue_size)
+        self._prefix_text_pub = self.create_publisher(String, prefix_text_topic, self._queue_size)
         self._raw_pub = self.create_publisher(String, raw_response_topic, self._queue_size)
         self._diag_pub = self.create_publisher(String, diagnostics_topic, self._queue_size)
 
@@ -438,6 +441,7 @@ class PiWebsocketBridgeNode(Node):
 
         self._publish_inferred_cmd(response)
         self._publish_ack(response)
+        self._publish_prefix_text(response)
         self._publish_raw_response(response)
 
     def _publish_inferred_cmd(self, response: dict[str, Any]) -> None:
@@ -482,6 +486,15 @@ class PiWebsocketBridgeNode(Node):
         msg = String()
         msg.data = json.dumps(payload, default=str)
         self._ack_pub.publish(msg)
+
+    def _publish_prefix_text(self, response: dict[str, Any]) -> None:
+        prefix_text = self._response_get(response, "prefix_text")
+        if prefix_text is None:
+            return
+
+        msg = String()
+        msg.data = str(prefix_text)
+        self._prefix_text_pub.publish(msg)
 
     def _publish_raw_response(self, response: dict[str, Any]) -> None:
         msg = String()

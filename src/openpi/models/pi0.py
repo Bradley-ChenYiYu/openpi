@@ -67,6 +67,7 @@ class Pi0(_model.BaseModel):
     def __init__(self, config: pi0_config.Pi0Config, rngs: nnx.Rngs):
         super().__init__(config.action_dim, config.action_horizon, config.max_token_len)
         self.pi05 = config.pi05
+        self.supports_prefix_text_from_hidden = True
         paligemma_config = _gemma.get_config(config.paligemma_variant)
         action_expert_config = _gemma.get_config(config.action_expert_variant)
         # TODO: rewrite gemma in NNX. For now, use bridge.
@@ -221,6 +222,7 @@ class Pi0(_model.BaseModel):
         *,
         num_steps: int | at.Int[at.Array, ""] = 10,
         noise: at.Float[at.Array, "b ah ad"] | None = None,
+        return_prefix_tokens: bool = False,
     ) -> _model.Actions:
         observation = _model.preprocess_observation(None, observation, train=False)
         # note that we use the convention more common in diffusion literature, where t=1 is noise and t=0 is the target
@@ -234,7 +236,29 @@ class Pi0(_model.BaseModel):
         prefix_tokens, prefix_mask, prefix_ar_mask = self.embed_prefix(observation)
         prefix_attn_mask = make_attn_mask(prefix_mask, prefix_ar_mask)
         positions = jnp.cumsum(prefix_mask, axis=1) - 1
-        _, kv_cache = self.PaliGemma.llm([prefix_tokens, None], mask=prefix_attn_mask, positions=positions)
+        (prefix_outputs_per_expert, kv_cache) = self.PaliGemma.llm(
+            [prefix_tokens, None], mask=prefix_attn_mask, positions=positions
+        )
+
+        prefix_token_ids = None
+        prefix_token_mask = None
+        prefix_hidden = prefix_outputs_per_expert[0]
+        if prefix_hidden is None:
+            raise ValueError("Expected non-None prefix expert hidden state at index 0")
+        if observation.tokenized_prompt is not None and observation.tokenized_prompt_mask is not None:
+            prompt_len = observation.tokenized_prompt.shape[1]
+            prompt_hidden = prefix_hidden[:, -prompt_len:, :]
+            prefix_token_mask = observation.tokenized_prompt_mask
+            if prompt_hidden.shape[1] != prefix_token_mask.shape[1]:
+                raise ValueError("Prompt hidden length and token mask length do not match")
+
+            embedder = self.PaliGemma.llm.embedder
+            if isinstance(embedder, dict):
+                embedding_table = embedder["input_embedding"]
+            else:
+                embedding_table = embedder.input_embedding_table
+            logits = jnp.einsum("btd,vd->btv", prompt_hidden, embedding_table)
+            prefix_token_ids = jnp.argmax(logits, axis=-1).astype(jnp.int32)
 
         def step(carry):
             x_t, time = carry
@@ -276,4 +300,10 @@ class Pi0(_model.BaseModel):
             return time >= -dt / 2
 
         x_0, _ = jax.lax.while_loop(cond, step, (noise, 1.0))
+        if return_prefix_tokens:
+            return {
+                "actions": x_0,
+                "prefix_token_ids": prefix_token_ids,
+                "prefix_token_mask": prefix_token_mask,
+            }
         return x_0
