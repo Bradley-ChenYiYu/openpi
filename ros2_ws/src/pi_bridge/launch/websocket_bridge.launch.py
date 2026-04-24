@@ -9,7 +9,7 @@ def generate_launch_description() -> LaunchDescription:
         DeclareLaunchArgument("websocket_host", default_value="127.0.0.1"),
         DeclareLaunchArgument("websocket_port", default_value="8000"),
         DeclareLaunchArgument("api_key", default_value=""),
-        DeclareLaunchArgument("image_topic", default_value="/camera/image_raw"),
+        DeclareLaunchArgument("image_topic", default_value="/camera/camera/color/image_raw"),
         DeclareLaunchArgument("odom_topic", default_value="/odom"),
         DeclareLaunchArgument("image_topic_type", default_value="image"),
         DeclareLaunchArgument("inferred_cmd_topic", default_value="/pi_bridge/inferred_cmd_vel"),

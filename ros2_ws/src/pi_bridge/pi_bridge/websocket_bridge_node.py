@@ -178,7 +178,7 @@ class PiWebsocketBridgeNode(Node):
         self.declare_parameter("websocket_host", "127.0.0.1")
         self.declare_parameter("websocket_port", 8000)
         self.declare_parameter("api_key", "")
-        self.declare_parameter("image_topic", "/camera/image_raw")
+        self.declare_parameter("image_topic", "/camera/camera/color/image_raw")
         self.declare_parameter("odom_topic", "/odom")
         self.declare_parameter("image_topic_type", "image")
         self.declare_parameter("inferred_cmd_topic", "/pi_bridge/inferred_cmd_vel")
@@ -210,6 +210,12 @@ class PiWebsocketBridgeNode(Node):
         self._dropped_frames = 0
         self._parse_failures = 0
         self._last_latency_ms = 0.0
+        self._first_odom_logged = False
+        self._first_image_logged = False
+        self._last_waiting_data_log_ns = 0
+        self._last_sync_drop_log_ns = 0
+        self._last_missing_actions_log_ns = 0
+        self._start_time_ns = self.get_clock().now().nanoseconds
 
         image_topic = self.get_parameter("image_topic").value
         odom_topic = self.get_parameter("odom_topic").value
@@ -253,6 +259,13 @@ class PiWebsocketBridgeNode(Node):
         self._send_timer = self.create_timer(send_period, self._on_send_timer)
         self._diag_timer = self.create_timer(1.0, self._publish_diagnostics)
 
+        self.get_logger().info(
+            "Bridge config: "
+            f"image_topic={image_topic}, image_topic_type={image_topic_type}, "
+            f"odom_topic={odom_topic}, inferred_cmd_topic={inferred_cmd_topic}, "
+            f"send_rate_hz={self._send_rate_hz}, sync_tolerance_sec={self._sync_tolerance_sec}"
+        )
+
     def destroy_node(self) -> bool:
         self._manager.stop()
         return super().destroy_node()
@@ -278,6 +291,12 @@ class PiWebsocketBridgeNode(Node):
                 linear_x=float(msg.twist.twist.linear.x),
                 angular_z=float(msg.twist.twist.angular.z),
             )
+        if not self._first_odom_logged:
+            self._first_odom_logged = True
+            self.get_logger().info(
+                f"First odom received: stamp_ns={stamp_ns}, "
+                f"linear_x={msg.twist.twist.linear.x:.4f}, angular_z={msg.twist.twist.angular.z:.4f}"
+            )
 
     def _on_image(self, msg: Image) -> None:
         try:
@@ -288,6 +307,12 @@ class PiWebsocketBridgeNode(Node):
                     stamp_ns=stamp_ns,
                     frame_id=msg.header.frame_id,
                     image_array=image_array,
+                )
+            if not self._first_image_logged:
+                self._first_image_logged = True
+                self.get_logger().info(
+                    f"First image received: stamp_ns={stamp_ns}, frame_id={msg.header.frame_id}, "
+                    f"shape={image_array.shape}, encoding={msg.encoding}"
                 )
         except Exception as exc:
             self._parse_failures += 1
@@ -304,6 +329,12 @@ class PiWebsocketBridgeNode(Node):
                     stamp_ns=stamp_ns,
                     frame_id=msg.header.frame_id,
                     image_array=image_array,
+                )
+            if not self._first_image_logged:
+                self._first_image_logged = True
+                self.get_logger().info(
+                    f"First compressed image placeholder received: stamp_ns={stamp_ns}, "
+                    f"frame_id={msg.header.frame_id}, shape={image_array.shape}"
                 )
         except Exception as exc:
             self._parse_failures += 1
@@ -353,10 +384,34 @@ class PiWebsocketBridgeNode(Node):
             odom = self._latest_odom
 
         if image is None or odom is None:
+            now_ns = self.get_clock().now().nanoseconds
+            if now_ns - self._last_waiting_data_log_ns > 2_000_000_000:
+                self._last_waiting_data_log_ns = now_ns
+                uptime_sec = (now_ns - self._start_time_ns) / 1e9
+                if uptime_sec > 3.0:
+                    self.get_logger().warning(
+                        f"Waiting for synced inputs before infer: have_image={image is not None}, "
+                        f"have_odom={odom is not None}, uptime_sec={uptime_sec:.1f}. "
+                        "If have_image=False, verify image_topic and image_topic_type match the actual camera topic type."
+                    )
+                else:
+                    self.get_logger().info(
+                        f"Waiting for synced inputs before infer: have_image={image is not None}, "
+                        f"have_odom={odom is not None}"
+                    )
             return
 
-        if abs(image.stamp_ns - odom.stamp_ns) / 1e9 > self._sync_tolerance_sec:
+        sync_diff_sec = abs(image.stamp_ns - odom.stamp_ns) / 1e9
+        if sync_diff_sec > self._sync_tolerance_sec:
             self._dropped_frames += 1
+            now_ns = self.get_clock().now().nanoseconds
+            if now_ns - self._last_sync_drop_log_ns > 2_000_000_000:
+                self._last_sync_drop_log_ns = now_ns
+                self.get_logger().warning(
+                    f"Dropping frame due to timestamp mismatch: diff_sec={sync_diff_sec:.4f}, "
+                    f"image_stamp_ns={image.stamp_ns}, odom_stamp_ns={odom.stamp_ns}, "
+                    f"tolerance_sec={self._sync_tolerance_sec}"
+                )
             return
 
         request = {
@@ -375,9 +430,10 @@ class PiWebsocketBridgeNode(Node):
         self._last_latency_ms = (recv_ns - sent_ns) / 1e6
         self._total_sent += 1
         self._total_responses += 1
+        response_keys = [str(k) for k in response.keys()]
         self.get_logger().debug(
             f"Received inference response: latency_ms={self._last_latency_ms:.2f}, "
-            f"keys={sorted(response.keys())}"
+            f"keys={sorted(response_keys)}"
         )
 
         self._publish_inferred_cmd(response)
@@ -385,8 +441,14 @@ class PiWebsocketBridgeNode(Node):
         self._publish_raw_response(response)
 
     def _publish_inferred_cmd(self, response: dict[str, Any]) -> None:
-        actions = response.get("actions")
+        actions = self._response_get(response, "actions")
         if actions is None:
+            now_ns = self.get_clock().now().nanoseconds
+            if now_ns - self._last_missing_actions_log_ns > 2_000_000_000:
+                self._last_missing_actions_log_ns = now_ns
+                self.get_logger().warning(
+                    f"Inference response has no 'actions' key. Available keys={sorted(str(k) for k in response.keys())}"
+                )
             return
 
         try:
@@ -398,12 +460,14 @@ class PiWebsocketBridgeNode(Node):
                 linear_x = float(arr[0])
                 angular_z = float(arr[1])
             else:
+                self.get_logger().warning(f"Unsupported actions shape for cmd publish: shape={arr.shape}, ndim={arr.ndim}")
                 return
 
             msg = Twist()
             msg.linear.x = linear_x
             msg.angular.z = angular_z
             self._inferred_cmd_pub.publish(msg)
+            self.get_logger().debug(f"Published inferred cmd: linear_x={linear_x:.4f}, angular_z={angular_z:.4f}")
         except Exception as exc:
             self._parse_failures += 1
             self.get_logger().warning(f"Failed to publish inferred cmd: {exc}")
@@ -412,8 +476,8 @@ class PiWebsocketBridgeNode(Node):
         payload = {
             "ok": True,
             "latency_ms": self._last_latency_ms,
-            "server_timing": response.get("server_timing", {}),
-            "policy_timing": response.get("policy_timing", {}),
+            "server_timing": self._response_get(response, "server_timing", {}),
+            "policy_timing": self._response_get(response, "policy_timing", {}),
         }
         msg = String()
         msg.data = json.dumps(payload, default=str)
@@ -439,6 +503,15 @@ class PiWebsocketBridgeNode(Node):
 
     def _stamp_to_ns(self, stamp) -> int:
         return int(stamp.sec) * 1_000_000_000 + int(stamp.nanosec)
+
+    def _response_get(self, response: dict[str, Any], key: str, default: Any = None) -> Any:
+        #TODO: The response seems to be in bytes, we can remove the first "if" after verified
+        if key in response:
+            return response[key]
+        key_bytes = key.encode("utf-8")
+        if key_bytes in response:
+            return response[key_bytes]
+        return default
 
     def _jsonable(self, value: Any) -> Any:
         if isinstance(value, np.ndarray):
