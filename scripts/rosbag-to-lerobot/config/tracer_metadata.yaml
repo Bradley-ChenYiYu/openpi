@@ -5,26 +5,26 @@ default_task: pick and place block
 
 episodes:
   rosbag2_2026_04_17-13_41_55:
-    task: Navigate to the table with the white cup and brown paper bag.
+    task: Navigate to the table with the white cup and brown paper bag and stop.
   rosbag2_2026_04_17-13_43_32:
-    task: Navigate to the table with the white cup and brown paper bag.
+    task: Navigate to the table with the white cup and brown paper bag and stop.
   rosbag2_2026_04_17-13_47_50:
-    task: Navigate to the table with the cups.
+    task: Navigate to the table with the red and brown cups and stop.
   rosbag2_2026_04_17-13_49_44:
-    task: Navigate to the table with the white cup and brown paper bag.
+    task: Navigate to the table with the white cup and brown paper bag and stop.
   rosbag2_2026_04_17-13_51_09:
-    task: Navigate to the black table.
+    task: Navigate to the black table covered with a black cloth and stop.
   rosbag2_2026_04_17-13_52_20:
-    task: Navigate to the table with the blue water jug.
+    task: Navigate to the table with the blue water jug and stop.
   rosbag2_2026_04_17-13_54_21:
-    task: Navigate to the table with the white cup and brown paper bag.
+    task: Navigate to the table with the white cup and stop.
   rosbag2_2026_04_17-13_55_45:
-    task: Navigate to the table with the paper cups.
+    task: Navigate to the table with the stacks of cups and stop.
   rosbag2_2026_04_17-13_57_20:
-    task: Navigate to the table with the brown paper bag.
+    task: Navigate to the table with the blue container and stop.
   rosbag2_2026_04_17-13_59_36:
-    task: Navigate to the table with the white cup and brown paper bag.
+    task: Navigate to the table with the white cup and brown paper bag and stop.
   rosbag2_2026_04_17-14_00_42:
-    task: Navigate to the table with the brown paper cups and white pitchers.
+    task: Navigate to the table with the brown paper cups and white pitchers and stop.
   rosbag2_2026_04_17-14_02_08:
-    task: Navigate to the table with the white cup and brown paper bag.
+    task: Navigate to the table with the white cup and brown paper bag and stop.

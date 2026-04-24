@@ -23,26 +23,30 @@ Usage:
 VIDEO_PATH = "/home/shared/openpi/rosbag_dir/rosbag2_2026_04_17-13_41_55/_camera_camera_color_image_raw.mp4"
 MODEL = "gemma4:31b"    #"kimi-k2.5:cloud"
 OLLAMA_URL = "http://localhost:11434/api/generate"
-TARGET_FPS = 3  # Extract 3 frames per second
+TARGET_FPS = 3  # Extract ?? frames per second
 PROMPT = """
-You are an AI assistant specialized in robot navigation. Watch this video from a mobile robot's perspective and identify the specific target destination.
+You are an AI assistant specialized in robot navigation. Watch this video from a mobile robot's perspective and identify the specific target destination and the moment of arrival.
 
-Your task is to generate a direct natural language command that is specific enough to distinguish the target from other similar objects in the room.
+Your task is to generate a direct natural language command that specifies both the target and the requirement to stop once reached.
 
 ### Instructions:
 1. Identify the primary object the robot is approaching.
-2. Use distinguishing attributes to disambiguate it from others (e.g., "the wooden table," "the table on the far left," or "the table with the laptop").
-3. Format the output as a command for the robot to execute.
+2. Use distinguishing attributes (color, position, nearby items) to disambiguate the target.
+3. Explicitly include a "stop" or "halt" instruction to signal the end of the task.
+4. Format the output as a concise command.
 
 ### Examples:
 - Input: [Robot moves toward one of three tables; this one has a red bag]
-  Output: Navigate to the table with the red bag.
+  Output: Navigate to the table with the red bag and stop.
 - Input: [Robot turns toward the second desk in a row]
-  Output: Move to the second desk on the right side.
+  Output: Move to the second desk on the right and halt once reached.
+- Input: [Robot approaches a white door]
+  Output: Approach the white door and stop directly in front of it.
 
 ### Constraints:
 - Output ONLY the command.
-- No preamble, no "Here is the instruction," and no description of camera movement.
+- Ensure the command concludes with a stopping condition.
+- No preamble or descriptions of camera movement.
 """.strip()
 
 
