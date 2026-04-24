@@ -28,3 +28,9 @@ episodes:
     task: Navigate to the table with the brown paper cups and white pitchers and stop.
   rosbag2_2026_04_17-14_02_08:
     task: Navigate to the table with the white cup and brown paper bag and stop.
+  rosbag2_2026_04_24-07_41_46:
+    task: Navigate to the wooden double door and stop.
+  rosbag2_2026_04_24-07_45_25:
+    task: Navigate past the room with the fire extinguisher and the breakroom area with the wooden counter, then stop in front of the large wooden wall.
+  rosbag2_2026_04_24-08_07_33:
+    task: Please provide the video so I can analyze the robot's perspective and generate the path-based instruction for you.

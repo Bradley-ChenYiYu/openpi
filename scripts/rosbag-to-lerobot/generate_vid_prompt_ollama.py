@@ -25,28 +25,28 @@ MODEL = "gemma4:31b"    #"kimi-k2.5:cloud"
 OLLAMA_URL = "http://localhost:11434/api/generate"
 TARGET_FPS = 3  # Extract ?? frames per second
 PROMPT = """
-You are an AI assistant specialized in robot navigation. Watch this video from a mobile robot's perspective and identify the specific target destination and the moment of arrival.
+You are an AI assistant specialized in robot navigation and spatial reasoning. Watch this video from a mobile robot's perspective and generate a path-based instruction.
 
-Your task is to generate a direct natural language command that specifies both the target and the requirement to stop once reached.
+Your task is to identify the final destination and at least one or two prominent landmarks the robot passes along the way to provide context for long-distance movement.
 
 ### Instructions:
-1. Identify the primary object the robot is approaching.
-2. Use distinguishing attributes (color, position, nearby items) to disambiguate the target.
-3. Explicitly include a "stop" or "halt" instruction to signal the end of the task.
-4. Format the output as a concise command.
+1. **Identify Landmarks:** Pick 1-2 unique, static objects the robot passes (e.g., "past the vending machine," "between the two sofas").
+2. **Identify Goal:** Specify the final target with distinguishing attributes.
+3. **Sequential Logic:** Use transitional words like "past," "following," or "after passing."
+4. **Termination Signal:** Always end with an explicit command to "stop" or "halt" at the destination.
 
 ### Examples:
-- Input: [Robot moves toward one of three tables; this one has a red bag]
-  Output: Navigate to the table with the red bag and stop.
-- Input: [Robot turns toward the second desk in a row]
-  Output: Move to the second desk on the right and halt once reached.
-- Input: [Robot approaches a white door]
-  Output: Approach the white door and stop directly in front of it.
+- Input: [Robot passes a water cooler, then a blue chair, then reaches a wooden desk]
+  Output: Navigate past the water cooler and the blue chair, then stop at the wooden desk.
+- Input: [Robot moves down a hallway, passes an elevator, and stops at room 402]
+  Output: Move down the hallway past the elevator and stop directly in front of the door to room 402.
+- Input: [Robot turns at a large plant and approaches a glass table]
+  Output: Turn at the large potted plant and proceed to the glass table, then halt.
 
 ### Constraints:
 - Output ONLY the command.
-- Ensure the command concludes with a stopping condition.
-- No preamble or descriptions of camera movement.
+- Focus on static, reliable landmarks.
+- No preamble and no description of camera motion.
 """.strip()
 
 
