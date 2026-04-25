@@ -978,6 +978,26 @@ _CONFIGS = [
         batch_size=32,
         # num_workers=0,
     ),
+    TrainConfig(
+        name="pi05_tracer_finetune",
+        model=pi0_config.Pi0Config(pi05=True),
+        data=LeRobotTracerDataConfig(
+            repo_id="brad/tracer_data",
+            base_config=DataConfig(prompt_from_task=True),
+        ),
+        weight_loader=weight_loaders.CheckpointWeightLoader("gs://openpi-assets/checkpoints/pi05_base/params"),
+        num_train_steps=5_000,
+        batch_size=32,
+        # num_workers=0,
+        # Optional enhancements from other pi05 configs:
+        # ema_decay=0.999,
+        # lr_schedule=_optimizer.CosineDecaySchedule(
+        #     warmup_steps=1_000,
+        #     peak_lr=5e-5,
+        #     decay_steps=1_000_000,
+        #     decay_lr=5e-5,
+        # ),
+    ),
     #
     # ALOHA Sim configs. This config is used to demonstrate how to train on a simple simulated environment.
     #
