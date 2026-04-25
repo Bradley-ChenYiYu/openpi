@@ -15,15 +15,15 @@ repo_root=$(dirname "$script_dir")
 cd "$repo_root"
 
 # ===== Pipeline Step Configuration =====
-# Available steps: 1=rosbag2video, 2=generate_vid, 3=convert_rosbag, 4=compute_stats, 5=wandb_login_and_train
+# Available steps: 1=rosbag2video, 2=generate_vid_prompt_ollama, 3=convert_rosbag, 4=compute_stats, 5=wandb_login_and_train
 # Example: START_STEP=5 to skip to wandb login and training
 START_STEP="${START_STEP:-1}"
 
 # ===== Path Variables =====
-CONFIG_NAME="pi05_tracer_finetune"
+CONFIG_NAME="pi0_tracer_finetune"
 METADATA_CONFIG="scripts/rosbag-to-lerobot/config/tracer_metadata.yaml"
 TOPIC_MAPPING_CONFIG="scripts/rosbag-to-lerobot/config/tracer_topic_mapping.yaml"
-ROSBAG_DIR="rosbag_dir/rosbag_dir_20260417/"
+ROSBAG_DIR="rosbag_dir/rosbag_dir_20260424/"
 ROSBAG2VIDEO_RATE="50"
 
 # ===== generate_vid_prompt_ollama.py Variables =====
@@ -32,7 +32,7 @@ VID_PROMPT_PARENT_DIR="$ROSBAG_DIR"
 
 # ===== convert_rosbag_to_lerobot.py Variables =====
 CONVERT_INPUT_BAG_PATH="$ROSBAG_DIR"
-CONVERT_REPO_ID="brad/tracer_data"
+CONVERT_REPO_ID="brad/tracer_data_Soc_3F_dinning_pantry"
 CONVERT_ROBOT_TYPE="tracer"
 CONVERT_FPS="50"
 CONVERT_CONFIG_PATH="$TOPIC_MAPPING_CONFIG"
@@ -44,7 +44,7 @@ COMPUTE_NORM_CONFIG_NAME="$CONFIG_NAME"
 
 # ===== train.py Variables =====
 TRAIN_CONFIG_NAME="$CONFIG_NAME"
-TRAIN_EXP_NAME="pi05_tracer_soc3f_cafe_PromptStop"
+TRAIN_EXP_NAME="tracer_soc3f_dinning_pantry"
 TRAIN_OVERWRITE_FLAG="--overwrite"
 TRAIN_XLA_MEM_FRACTION="0.9"
 TRAIN_OUTPUT_LOG="train_output.log"
@@ -83,7 +83,7 @@ if [[ $START_STEP -le 2 ]]; then
     echo "Step 2/5: Generating video prompts..."
     uv run scripts/rosbag-to-lerobot/generate_vid_prompt_ollama.py \
         --metadata-path "$VID_PROMPT_METADATA_PATH" \
-        --parent-dir "$VID_PROMPT_PARENT_DIR"
+        --parent-dir "$VID_PROMPT_PARENT_DIR" --overwrite-episode
     echo "✓ Step 2 completed"
 else
     echo "⊘ Step 2 skipped"
@@ -120,10 +120,10 @@ if [[ $START_STEP -le 5 ]]; then
     echo "Step 5/5: Logging into Weights & Biases..."
     uv run wandb login
     echo "Step 5/5: Starting model training..."
-    (XLA_PYTHON_CLIENT_MEM_FRACTION="$TRAIN_XLA_MEM_FRACTION" nohup uv run scripts/train.py "$TRAIN_CONFIG_NAME" \
+    XLA_PYTHON_CLIENT_MEM_FRACTION="$TRAIN_XLA_MEM_FRACTION" nohup uv run scripts/train.py "$TRAIN_CONFIG_NAME" \
         --exp-name="$TRAIN_EXP_NAME" \
         "$TRAIN_OVERWRITE_FLAG" \
-        > "$TRAIN_OUTPUT_LOG" 2>&1 &)
+        > "$TRAIN_OUTPUT_LOG" 2>&1 &
     echo "✓ Step 5 completed (training running in background)"
 else
     echo "⊘ Step 5 skipped"
