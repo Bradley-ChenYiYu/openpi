@@ -23,6 +23,7 @@ RUN apt-get update && \
     iproute2 \
     libasio-dev \
     udev \
+    xboxdrv \
 && apt-get install -y \
     python3-pip \
     ros-humble-realsense2-* \
