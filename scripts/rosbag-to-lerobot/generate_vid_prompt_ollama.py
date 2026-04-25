@@ -2,7 +2,9 @@ import cv2
 import base64
 import requests
 import os
-
+import argparse
+import sys
+from pathlib import Path
 '''
 This script processes a video file and sends them to an Ollama model for action labeling.
 
@@ -10,16 +12,193 @@ Usage:
 1. Connect to ollama server:
     ssh -R 11434:localhost:11434 your_ollama_server_user@your_ollama_server_ip
 2. Run this script:
-    python3 generate_vid_prompt_ollama.py
+    ```
+    uv run scripts/rosbag-to-lerobot/generate_vid_prompt_ollama.py \
+    --metadata-path /home/shared/openpi/scripts/rosbag-to-lerobot/config/tracer_metadata.yaml  \
+    --parent-dir /home/shared/openpi/rosbag_dir/
+    ```
 '''
 
 # Configuration
-VIDEO_PATH = "/home/shared/openpi/rosbag2_2025_09_25-13_49_34.mp4"
-MODEL = "kimi-k2.5:cloud"
+VIDEO_PATH = "/home/shared/openpi/rosbag_dir/rosbag2_2026_04_17-13_41_55/_camera_camera_color_image_raw.mp4"
+MODEL = "gemma4:31b"    #"kimi-k2.5:cloud"
 OLLAMA_URL = "http://localhost:11434/api/generate"
-TARGET_FPS = 3  # Extract 3 frames per second
+TARGET_FPS = 3  # Extract ?? frames per second
+PROMPT = """
+You are an AI assistant specialized in robot navigation and spatial reasoning. Watch this video from a mobile robot's perspective and generate a path-based instruction.
 
-def process_video(video_path, target_fps, model_name, api_url):
+Your task is to identify the final destination and at least one or two prominent landmarks the robot passes along the way to provide context for long-distance movement.
+
+### Instructions:
+1. **Identify Landmarks:** Pick 1-2 unique, static objects the robot passes (e.g., "past the vending machine," "between the two sofas").
+2. **Identify Goal:** Specify the final target with distinguishing attributes.
+3. **Sequential Logic:** Use transitional words like "past," "following," or "after passing."
+4. **Termination Signal:** Always end with an explicit command to "stop" or "halt" at the destination.
+
+### Examples:
+- Input: [Robot passes a water cooler, then a blue chair, then reaches a wooden desk]
+  Output: Navigate past the water cooler and the blue chair, then stop at the wooden desk.
+- Input: [Robot moves down a hallway, passes an elevator, and stops at room 402]
+  Output: Move down the hallway past the elevator and stop directly in front of the door to room 402.
+- Input: [Robot turns at a large plant and approaches a glass table]
+  Output: Turn at the large potted plant and proceed to the glass table, then halt.
+
+### Constraints:
+- Output ONLY the command.
+- Focus on static, reliable landmarks.
+- No preamble and no description of camera motion.
+""".strip()
+
+
+def _load_yaml_mapping(yaml_path: Path) -> dict[str, object]:
+    try:
+        from ruamel.yaml import YAML
+        from ruamel.yaml.comments import CommentedMap
+    except ModuleNotFoundError as exc:
+        raise ModuleNotFoundError(
+            "ruamel.yaml is required for comment-preserving metadata read/write. Install with `uv sync` or `pip install ruamel.yaml`."
+        ) from exc
+
+    yaml = YAML(typ="rt")
+    yaml.preserve_quotes = True
+    yaml.width = 4096
+    yaml.indent(mapping=2, sequence=4, offset=2)
+
+    if not yaml_path.exists():
+        return CommentedMap({"episodes": CommentedMap()})
+
+    raw = yaml.load(yaml_path.read_text(encoding="utf-8"))
+    if raw is None:
+        return CommentedMap({"episodes": CommentedMap()})
+    if not isinstance(raw, dict):
+        raise ValueError(f"Metadata YAML must be a mapping at root: {yaml_path}")
+    if "episodes" not in raw or raw["episodes"] is None:
+        raw["episodes"] = CommentedMap()
+    if not isinstance(raw["episodes"], dict):
+        raise ValueError(f"'episodes' must be a mapping in: {yaml_path}")
+    return raw
+
+
+def _write_yaml_mapping(yaml_path: Path, data: dict[str, object]) -> None:
+    try:
+        from ruamel.yaml import YAML
+    except ModuleNotFoundError as exc:
+        raise ModuleNotFoundError(
+            "ruamel.yaml is required for comment-preserving metadata read/write. Install with `uv sync` or `pip install ruamel.yaml`."
+        ) from exc
+
+    yaml = YAML(typ="rt")
+    yaml.preserve_quotes = True
+    yaml.width = 4096
+    yaml.indent(mapping=2, sequence=4, offset=2)
+    yaml_path.parent.mkdir(parents=True, exist_ok=True)
+    with yaml_path.open("w", encoding="utf-8") as handle:
+        yaml.dump(data, handle)
+
+
+def append_episode_metadata(
+    metadata_path: str,
+    episode_name: str,
+    task: str,
+    tags: list[str] | None = None,
+    split: str | None = None,
+    overwrite: bool = False,
+) -> bool:
+    metadata_file = Path(metadata_path)
+    metadata = _load_yaml_mapping(metadata_file)
+    episodes = metadata["episodes"]
+
+    if episode_name in episodes and not overwrite:
+        print(
+            f"Episode '{episode_name}' already exists in {metadata_file}. "
+            "Use --overwrite-episode to update it."
+        )
+        return False
+
+    episode_entry = {"task": task}
+    if tags:
+        try:
+            from ruamel.yaml.comments import CommentedSeq
+        except ModuleNotFoundError as exc:
+            raise ModuleNotFoundError(
+                "ruamel.yaml is required for comment-preserving metadata read/write. Install with `uv sync` or `pip install ruamel.yaml`."
+            ) from exc
+
+        episode_tags = CommentedSeq(tags)
+        episode_tags.fa.set_flow_style()
+        episode_entry["tags"] = episode_tags
+    if split:
+        episode_entry["split"] = split
+
+    episodes[episode_name] = episode_entry
+    _write_yaml_mapping(metadata_file, metadata)
+    print(f"Updated metadata: {metadata_file} (episode: {episode_name})")
+    return True
+
+
+def infer_episode_name(video_path: str) -> str:
+    parent_name = Path(video_path).resolve().parent.name
+    if parent_name:
+        return parent_name
+    return Path(video_path).stem
+
+
+def find_video_paths(parent_dir: str) -> list[Path]:
+    parent_path = Path(parent_dir)
+    if not parent_path.exists():
+        raise FileNotFoundError(f"Parent directory does not exist: {parent_path}")
+    if not parent_path.is_dir():
+        raise ValueError(f"Parent path must be a directory: {parent_path}")
+
+    video_paths: list[Path] = []
+    for child_dir in sorted(path for path in parent_path.iterdir() if path.is_dir()):
+        video_paths.extend(
+            sorted(
+                path
+                for path in child_dir.rglob("*")
+                if path.is_file() and path.suffix.lower() in {".mp4", ".mov", ".mkv", ".avi"}
+            )
+        )
+
+    if not video_paths:
+        raise ValueError(f"No video files found under: {parent_path}")
+    return video_paths
+
+
+def process_and_maybe_append_video(
+    video_path: str,
+    target_fps: int,
+    model_name: str,
+    api_url: str,
+    prompt: str,
+    metadata_path: str | None,
+    task_override: str | None,
+    tags: list[str] | None,
+    split: str | None,
+    overwrite: bool,
+    episode_name: str | None = None,
+) -> str | None:
+    generated_task = process_video(video_path, target_fps, model_name, api_url, prompt)
+    task_to_store = task_override or generated_task
+
+    if metadata_path is not None:
+        if not task_to_store:
+            raise ValueError(
+                "No task text available to append. Provide --task or ensure Ollama returns text."
+            )
+        resolved_episode_name = episode_name or infer_episode_name(video_path)
+        append_episode_metadata(
+            metadata_path=metadata_path,
+            episode_name=resolved_episode_name,
+            task=task_to_store,
+            tags=tags,
+            split=split,
+            overwrite=overwrite,
+        )
+
+    return task_to_store
+
+def process_video(video_path, target_fps, model_name, api_url, prompt):
     print(f"Processing video: {video_path}")
     
     # 1. Extract Frames directly to memory (no temp dir needed)
@@ -27,7 +206,7 @@ def process_video(video_path, target_fps, model_name, api_url):
     
     if not cap.isOpened():
         print(f"Error opening video file {video_path}")
-        return
+        return None
 
     base64_images = []
     original_fps = cap.get(cv2.CAP_PROP_FPS)
@@ -62,7 +241,7 @@ def process_video(video_path, target_fps, model_name, api_url):
     
     payload = {
         "model": model_name,
-        "prompt": "Your task is to label video actions. You must output ONLY the instruction. No preamble, no 'Here is the instruction', and no extra text.",
+        "prompt": prompt,
         "stream": False,
         "images": base64_images,
         "options": {
@@ -75,11 +254,114 @@ def process_video(video_path, target_fps, model_name, api_url):
         response.raise_for_status() # Raise error for bad status codes
         
         result = response.json()
+        model_response = result.get("response", "").strip()
         print("\n--- Response ---")
-        print(result.get("response", "No response found"))
+        print(model_response or "No response found")
+        return model_response
         
     except requests.exceptions.RequestException as e:
         print(f"Request failed: {e}")
+        return None
+
+
+def parse_tags(raw_tags: str | None) -> list[str]:
+    if not raw_tags:
+        return []
+    return [tag.strip() for tag in raw_tags.split(",") if tag.strip()]
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description=(
+            "Process a video with Ollama and optionally append the generated task "
+            "to tracer metadata YAML under episodes."
+        )
+    )
+    parser.add_argument("--video-path", default=VIDEO_PATH)
+    parser.add_argument(
+        "--parent-dir",
+        default=None,
+        help="Grandparent folder containing one subfolder per episode, each with one or more videos.",
+    )
+    parser.add_argument("--model", default=MODEL)
+    parser.add_argument("--ollama-url", default=OLLAMA_URL)
+    parser.add_argument("--target-fps", type=int, default=TARGET_FPS)
+    parser.add_argument("--prompt", default=PROMPT)
+
+    parser.add_argument(
+        "--metadata-path",
+        default=os.path.join(os.path.dirname(__file__), "config", "tracer_metadata.yaml"),
+        help="Path to metadata YAML file to update.",
+    )
+    parser.add_argument(
+        "--append-metadata",
+        action="store_true",
+        help="Append generated (or provided) task text to metadata episodes.",
+    )
+    parser.add_argument(
+        "--episode-name",
+        default=None,
+        help="Episode key under metadata. Defaults to parent directory name of the video file.",
+    )
+    parser.add_argument(
+        "--task",
+        default=None,
+        help="Optional explicit task text. If omitted, model response is used.",
+    )
+    parser.add_argument(
+        "--tags",
+        default=None,
+        help="Comma-separated tags for the episode, e.g. 'demo,train'.",
+    )
+    parser.add_argument(
+        "--split",
+        default=None,
+        help="Optional split for the episode, e.g. train/val/test.",
+    )
+    parser.add_argument(
+        "--overwrite-episode",
+        action="store_true",
+        help="Overwrite existing episode metadata if the episode key already exists.",
+    )
+    return parser.parse_args()
 
 if __name__ == "__main__":
-    process_video(VIDEO_PATH, TARGET_FPS, MODEL, OLLAMA_URL)
+    args = parse_args()
+
+    append_requested = args.append_metadata or "--metadata-path" in sys.argv
+    metadata_path = args.metadata_path if append_requested else None
+
+    if args.parent_dir:
+        if args.episode_name is not None:
+            raise ValueError("--episode-name cannot be used with --parent-dir batch mode.")
+
+        video_paths = find_video_paths(args.parent_dir)
+        print(f"Found {len(video_paths)} video files under {args.parent_dir}")
+        for video_path in video_paths:
+            print(f"\n=== Processing {video_path} ===")
+            process_and_maybe_append_video(
+                video_path=str(video_path),
+                target_fps=args.target_fps,
+                model_name=args.model,
+                api_url=args.ollama_url,
+                prompt=args.prompt,
+                metadata_path=metadata_path,
+                task_override=args.task,
+                tags=parse_tags(args.tags),
+                split=args.split,
+                overwrite=args.overwrite_episode,
+            )
+    else:
+        process_and_maybe_append_video(
+            video_path=args.video_path,
+            target_fps=args.target_fps,
+            model_name=args.model,
+            api_url=args.ollama_url,
+            prompt=args.prompt,
+            metadata_path=metadata_path,
+            task_override=args.task,
+            tags=parse_tags(args.tags),
+            split=args.split,
+            overwrite=args.overwrite_episode,
+            episode_name=args.episode_name,
+        )

@@ -13,7 +13,10 @@ COPY --from=ghcr.io/astral-sh/uv:0.5.1 /uv /uvx /bin/
 WORKDIR /app
 
 # Needed because LeRobot uses git-lfs.
-RUN apt-get update && apt-get install -y git git-lfs linux-headers-generic build-essential clang
+RUN apt-get update --fix-missing && apt-get install -y git git-lfs linux-headers-generic build-essential clang || (sleep 10 && apt-get update && apt-get install -y git git-lfs linux-headers-generic build-essential clang)
+
+# For the cv2 python package in rosbag2video
+RUN apt-get update && apt-get install -y libgl1-mesa-glx libglib2.0-0 libsm6 libxrender1 libxext6
 
 # Copy from the cache instead of linking since it's a mounted volume
 ENV UV_LINK_MODE=copy
@@ -35,4 +38,4 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 COPY src/openpi/models_pytorch/transformers_replace/ /tmp/transformers_replace/
 RUN /.venv/bin/python -c "import transformers; print(transformers.__file__)" | xargs dirname | xargs -I{} cp -r /tmp/transformers_replace/* {} && rm -rf /tmp/transformers_replace
 
-CMD /bin/bash -c "uv run scripts/serve_policy.py $SERVER_ARGS"
+# CMD /bin/bash -c "uv run scripts/serve_policy.py $SERVER_ARGS"

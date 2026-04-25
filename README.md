@@ -326,33 +326,53 @@ We will collect common issues and their solutions here. If you encounter an issu
 
 ## Yiyu's Appendix  
 
-### Single rosbag2 to LeRobot data  
+### Data Collection with rosbag  
 
-1. (Optional) Generate task prompt using your Ollama model:  
-
-    - Generate mp4 from rosbag:  
+1. Launch tracer and sensors:  
 
     ```bash
-    python3 scripts/rosbag2video/rosbag2video.py -v -t {ROS2_IMAGE_TOPIC}
-     -o {VIDEO_NAME}.mp4 {BAG_FOLDER}
+    ros2 launch tracer_base tracer_bringup.launch.py
     ```
 
-    - Gnerate prompt:    
-        - Set `VIDEO_PATH`, `OLLAMA_URL`, and `MODEL` in the script.  
+2. Start recording:  
     
+    - `-b`: $2\times 1024^3$ bytes  
+
     ```bash
-    python3 scripts/rosbag-to-lerobot/generate_vid_prompt_ollama.py
+    ros2 bag record -b 2147483648 /cmd_vel /odom /camera/camera/color/image_raw
     ```
 
-2. Copy and edit configs:  
+### Multi-rosbag to LeRobot data  
+
+1. Copy and edit configs:  
 
     - *scripts/rosbag-to-lerobot/config/metadata.example.yaml*  
     - *scripts/rosbag-to-lerobot/config/topic_mapping.example.yaml*  
 
+2. (Optional) Generate task prompt using your Ollama model:  
+
+    - Generate mp4 from rosbag:  
+        - `-r`: fps  
+
+    ```bash
+    uv run scripts/rosbag-to-lerobot/rosbag2video/rosbag2video.py -r 50 rosbag_dir/
+    ```
+
+    - Gnerate prompt:    
+        - Set `OLLAMA_URL`, and `MODEL` in the script.  
+        - Use [ssh_bridge_ollama.sh](scripts/rosbag-to-lerobot/ssh_bridge_ollama.sh) if your convert script and ollama server are on A100  
+        - `--metadata-path`: File to write prompt to  
+    
+    ```bash
+    uv run scripts/rosbag-to-lerobot/generate_vid_prompt_ollama.py \
+    --metadata-path scripts/rosbag-to-lerobot/config/tracer_metadata.yaml  \
+    --parent-dir rosbag_dir/
+    ```
+
 3. Convert rosbag2 to LeRobot data:  
 
     ```bash
-    uv run scripts/rosbag-to-lerobot/convert_rosbag_to_lerobot.py --input-bag-path {YOUR_ROSBAG} --repo-id {HF_USER}/{DATA_NAME} --robot-type {ROBOT_NAME} --fps 3 --config-path  {PATH_OF_your_topic_mapping.yaml} --metadata-path {PATH_OF_your_metadata.yaml} --force-clean-output
+    uv run scripts/rosbag-to-lerobot/convert_rosbag_to_lerobot.py --input-bag-path {YOUR_ROSBAG/PARENT_ROSBAGS} --repo-id {HF_USER}/{DATA_NAME} --robot-type {ROBOT_NAME} --fps 50 --config-path  {PATH_OF_your_topic_mapping.yaml} --metadata-path {PATH_OF_your_metadata.yaml} --force-clean-output
     ```
 
 4. (Optional) View your LeRobot data:  
@@ -362,6 +382,7 @@ We will collect common issues and their solutions here. If you encounter an issu
     ```
 
     - {YOUR_DATA_PATH} default at `/home/{USER}/.cache/huggingface/lerobot/{HF_USER}/{DATA_NAME}/`  
+    - Remember to forward port `--web-port` and `--ws-port` if running in remote server.  
 
 ### Training for Tracer  
 
@@ -384,5 +405,39 @@ We will collect common issues and their solutions here. If you encounter an issu
 3. Run training script  
 
     ```bash
-    XLA_PYTHON_CLIENT_MEM_FRACTION=0.9 nohup uv run scripts/train.py pi0_tracer_scratch --exp-name=my_experiment_tracer --overwrite > train_output.log 2>&1 &
+    XLA_PYTHON_CLIENT_MEM_FRACTION=0.9 nohup uv run scripts/train.py pi0_tracer_finetune --exp-name=my_experiment_tracer --overwrite > train_output.log 2>&1 &
+    ```
+
+### Inference for Tracer in ROS2  
+
+1. Compose docker container for Pi server and ROS2 workspace:  
+
+    ```bash
+    docker compose -f examples/tracer/compose.yml up
+    ```
+
+2. Log in to the container:  
+
+    ```bash
+    docker exec -it {CONTAINER_NAME} bash
+    ```
+    - OpenPi container: tracer-openpi_server-1  
+    - ROS2 container: openpi_tracer  
+
+3. Start the server (OpenPi container)  
+
+    ```bash
+    uv run scripts/serve_policy.py policy:checkpoint --policy.config=pi0_tracer_finetune --policy.dir=checkpoints/pi0_tracer_finetune/tracer_soc3f_cafe_batch32/4999
+    ```
+
+4. Start the robot and sensor nodes (ROS2 container)  
+
+    ```bash
+    colcon build --packages-select tracer_base && source install/setup.bash && ros2 launch tracer_base tracer_bringup.launch.py
+    ```
+
+5. Start the navigation (ROS2 container)  
+
+    ```bash
+    colcon build --packages-select pi_bridge &&  source install/setup.bash && ros2 launch pi_bridge websocket_bridge.launch.py prompt:="Navigate to the table with the paper cups" inferred_cmd_topic:=/cmd_vel
     ```

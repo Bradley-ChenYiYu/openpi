@@ -970,13 +970,13 @@ _CONFIGS = [
         name="pi0_tracer_finetune",
         model=pi0_config.Pi0Config(),
         data=LeRobotTracerDataConfig(
-            repo_id="brad/tracer_data",
+            repo_id="brad/tracer_data_Soc_3F_dinning_pantry",
             base_config=DataConfig(prompt_from_task=True),
         ),
         weight_loader=weight_loaders.CheckpointWeightLoader("gs://openpi-assets/checkpoints/pi0_base/params"),
         num_train_steps=5_000,
-        batch_size=8,
-        num_workers=0,
+        batch_size=32,
+        # num_workers=0,
     ),
     #
     # ALOHA Sim configs. This config is used to demonstrate how to train on a simple simulated environment.

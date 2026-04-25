@@ -7,3 +7,9 @@
 [submodule "scripts/rosbag-to-lerobot/rosbag2video"]
 	path = scripts/rosbag-to-lerobot/rosbag2video
 	url = git@github.com:Bradley-ChenYiYu/rosbag2video.git
+[submodule "ros2_ws/src/tracer_ros2"]
+	path = ros2_ws/src/tracer_ros2
+	url = git@github.com:Bradley-ChenYiYu/tracer_ros2.git
+[submodule "ros2_ws/src/ugv_sdk"]
+	path = ros2_ws/src/ugv_sdk
+	url = git@github.com:westonrobot/ugv_sdk.git
