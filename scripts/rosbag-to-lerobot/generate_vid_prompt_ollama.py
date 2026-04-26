@@ -5,6 +5,7 @@ import os
 import argparse
 import sys
 from pathlib import Path
+
 '''
 This script processes a video file and sends them to an Ollama model for action labeling.
 
@@ -47,6 +48,17 @@ Your task is to identify the final destination and at least one or two prominent
 - Output ONLY the command.
 - Focus on static, reliable landmarks.
 - No preamble and no description of camera motion.
+""".strip()
+
+BATCH_NOTE_PROMPT_SUFFIX = """
+
+You are seeing a contiguous time segment of the full video.
+Extract concise notes for this segment only.
+
+Return exactly three lines:
+LANDMARKS: <comma-separated static landmarks or none>
+GOAL_CANDIDATE: <possible final destination seen in this segment or unknown>
+PATH_SNIPPET: <short command-like snippet for this segment>
 """.strip()
 
 
@@ -177,8 +189,20 @@ def process_and_maybe_append_video(
     split: str | None,
     overwrite: bool,
     episode_name: str | None = None,
+    max_frames: int | None = None,
+    batch_size: int | None = None,
+    request_timeout: int = 180,
 ) -> str | None:
-    generated_task = process_video(video_path, target_fps, model_name, api_url, prompt)
+    generated_task = process_video(
+        video_path=video_path,
+        target_fps=target_fps,
+        model_name=model_name,
+        api_url=api_url,
+        prompt=prompt,
+        max_frames=max_frames,
+        batch_size=batch_size,
+        request_timeout=request_timeout,
+    )
     task_to_store = task_override or generated_task
 
     if metadata_path is not None:
@@ -198,7 +222,94 @@ def process_and_maybe_append_video(
 
     return task_to_store
 
-def process_video(video_path, target_fps, model_name, api_url, prompt):
+
+def _uniform_sample(items: list[str], max_items: int) -> list[str]:
+    if max_items <= 0 or len(items) <= max_items:
+        return items
+    if max_items == 1:
+        return [items[len(items) // 2]]
+
+    last_index = len(items) - 1
+    sampled: list[str] = []
+    for i in range(max_items):
+        idx = round(i * last_index / (max_items - 1))
+        sampled.append(items[idx])
+    return sampled
+
+
+def _call_ollama(
+    model_name: str,
+    api_url: str,
+    prompt: str,
+    images: list[str] | None,
+    request_timeout: int,
+) -> str | None:
+    payload = {
+        "model": model_name,
+        "prompt": prompt,
+        "stream": False,
+        "options": {
+            "temperature": 0.3,
+        },
+    }
+    if images is not None:
+        payload["images"] = images
+        approx_base64_mb = sum(len(img) for img in images) / (1024 * 1024)
+        print(
+            f"Sending {len(images)} image(s) to Ollama "
+            f"(base64 payload ~{approx_base64_mb:.1f} MiB)..."
+        )
+    else:
+        print("Sending text-only synthesis request to Ollama...")
+
+    try:
+        response = requests.post(api_url, json=payload, timeout=request_timeout)
+        response.raise_for_status()
+        result = response.json()
+        model_response = result.get("response", "").strip()
+        print("\n--- Response ---")
+        print(model_response or "No response found")
+        return model_response
+    except requests.exceptions.RequestException as e:
+        print(f"Request failed: {e}")
+        return None
+
+
+def _synthesize_from_batch_notes(
+    prompt: str,
+    batch_notes: list[str],
+    model_name: str,
+    api_url: str,
+    request_timeout: int,
+) -> str | None:
+    synthesis_prompt = (
+        f"{prompt}\n\n"
+        "You are given sequential notes from multiple video batches. "
+        "Notes may be incomplete or noisy. Infer one final path instruction "
+        "for the full trajectory.\n"
+        "Return only the final command.\n\n"
+        "Batch notes:\n"
+        + "\n\n".join(batch_notes)
+    )
+    return _call_ollama(
+        model_name=model_name,
+        api_url=api_url,
+        prompt=synthesis_prompt,
+        images=None,
+        request_timeout=request_timeout,
+    )
+
+
+def process_video(
+    video_path,
+    target_fps,
+    model_name,
+    api_url,
+    prompt,
+    max_frames=None,
+    batch_size=None,
+    request_timeout=180,
+):
     print(f"Processing video: {video_path}")
     
     # 1. Extract Frames directly to memory (no temp dir needed)
@@ -236,32 +347,66 @@ def process_video(video_path, target_fps, model_name, api_url, prompt):
     cap.release()
     print(f"Extracted {len(base64_images)} frames.")
 
-    # 2. Send to Ollama
-    print("Sending payload to Ollama...")
-    
-    payload = {
-        "model": model_name,
-        "prompt": prompt,
-        "stream": False,
-        "images": base64_images,
-        "options": {
-            "temperature": 0.3
-        }
-    }
+    if max_frames is not None and max_frames > 0 and len(base64_images) > max_frames:
+        original_count = len(base64_images)
+        base64_images = _uniform_sample(base64_images, max_frames)
+        print(
+            f"Uniformly downsampled frames from {original_count} to {len(base64_images)} "
+            f"because --max-frames={max_frames}."
+        )
 
-    try:
-        response = requests.post(api_url, json=payload)
-        response.raise_for_status() # Raise error for bad status codes
-        
-        result = response.json()
-        model_response = result.get("response", "").strip()
-        print("\n--- Response ---")
-        print(model_response or "No response found")
-        return model_response
-        
-    except requests.exceptions.RequestException as e:
-        print(f"Request failed: {e}")
+    if not base64_images:
+        print("No frames extracted to send.")
         return None
+
+    if batch_size is None or batch_size <= 0 or len(base64_images) <= batch_size:
+        return _call_ollama(
+            model_name=model_name,
+            api_url=api_url,
+            prompt=prompt,
+            images=base64_images,
+            request_timeout=request_timeout,
+        )
+
+    print(
+        f"Batch mode enabled: processing {len(base64_images)} frames "
+        f"in chunks of {batch_size}."
+    )
+    total_batches = (len(base64_images) + batch_size - 1) // batch_size
+    batch_notes: list[str] = []
+    for batch_idx in range(total_batches):
+        start = batch_idx * batch_size
+        end = min(len(base64_images), (batch_idx + 1) * batch_size)
+        batch_images = base64_images[start:end]
+        batch_prompt = (
+            f"{prompt}\n\n"
+            f"Segment index: {batch_idx + 1}/{total_batches}.\n"
+            f"Frames in this segment: {len(batch_images)}.\n\n"
+            f"{BATCH_NOTE_PROMPT_SUFFIX}"
+        )
+        print(f"Analyzing batch {batch_idx + 1}/{total_batches}...")
+        batch_result = _call_ollama(
+            model_name=model_name,
+            api_url=api_url,
+            prompt=batch_prompt,
+            images=batch_images,
+            request_timeout=request_timeout,
+        )
+        if batch_result:
+            batch_notes.append(f"Batch {batch_idx + 1}/{total_batches}:\n{batch_result}")
+
+    if not batch_notes:
+        print("No batch notes were generated.")
+        return None
+
+    print(f"Synthesizing final instruction from {len(batch_notes)} batch note(s)...")
+    return _synthesize_from_batch_notes(
+        prompt=prompt,
+        batch_notes=batch_notes,
+        model_name=model_name,
+        api_url=api_url,
+        request_timeout=request_timeout,
+    )
 
 
 def parse_tags(raw_tags: str | None) -> list[str]:
@@ -286,6 +431,30 @@ def parse_args():
     parser.add_argument("--model", default=MODEL)
     parser.add_argument("--ollama-url", default=OLLAMA_URL)
     parser.add_argument("--target-fps", type=int, default=TARGET_FPS)
+    parser.add_argument(
+        "--max-frames",
+        type=int,
+        default=0,
+        help=(
+            "Optional cap on total sampled frames sent per video. "
+            "0 disables capping."
+        ),
+    )
+    parser.add_argument(
+        "--batch-size",
+        type=int,
+        default=16,
+        help=(
+            "Optional number of frames per vision request. "
+            "If > 0 and frame count exceeds it, run batched analysis + final synthesis."
+        ),
+    )
+    parser.add_argument(
+        "--request-timeout",
+        type=int,
+        default=180,
+        help="HTTP timeout in seconds for each Ollama request.",
+    )
     parser.add_argument("--prompt", default=PROMPT)
 
     parser.add_argument(
@@ -350,6 +519,9 @@ if __name__ == "__main__":
                 tags=parse_tags(args.tags),
                 split=args.split,
                 overwrite=args.overwrite_episode,
+                max_frames=args.max_frames if args.max_frames > 0 else None,
+                batch_size=args.batch_size if args.batch_size > 0 else None,
+                request_timeout=args.request_timeout,
             )
     else:
         process_and_maybe_append_video(
@@ -364,4 +536,7 @@ if __name__ == "__main__":
             split=args.split,
             overwrite=args.overwrite_episode,
             episode_name=args.episode_name,
+            max_frames=args.max_frames if args.max_frames > 0 else None,
+            batch_size=args.batch_size if args.batch_size > 0 else None,
+            request_timeout=args.request_timeout,
         )
