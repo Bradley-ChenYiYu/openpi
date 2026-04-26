@@ -17,10 +17,10 @@ cd "$repo_root"
 # ===== Pipeline Step Configuration =====
 # Available steps: 1=rosbag2video, 2=generate_vid_prompt_ollama, 3=convert_rosbag, 4=compute_stats, 5=wandb_login_and_train
 # Example: START_STEP=5 to skip to wandb login and training
-START_STEP="${START_STEP:-1}"
+START_STEP="${START_STEP:-4}"
 
 # ===== Path Variables =====
-CONFIG_NAME="pi0_tracer_finetune"
+CONFIG_NAME="pi0_tracer_finetune_dinning_pantry"
 METADATA_CONFIG="scripts/rosbag-to-lerobot/config/tracer_metadata.yaml"
 TOPIC_MAPPING_CONFIG="scripts/rosbag-to-lerobot/config/tracer_topic_mapping.yaml"
 ROSBAG_DIR="rosbag_dir/rosbag_dir_20260424/"

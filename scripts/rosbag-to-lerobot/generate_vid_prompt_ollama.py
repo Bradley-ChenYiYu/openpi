@@ -26,39 +26,33 @@ MODEL = "gemma4:31b"    #"kimi-k2.5:cloud"
 OLLAMA_URL = "http://localhost:11434/api/generate"
 TARGET_FPS = 3  # Extract ?? frames per second
 PROMPT = """
-You are an AI assistant specialized in robot navigation and spatial reasoning. Watch this video from a mobile robot's perspective and generate a path-based instruction.
+You are a Navigation VLA (Vision-Language-Action) Data Annotator. 
+Your goal is to convert sequential robot observations into a single, high-fidelity path instruction.
 
-Your task is to identify the final destination and at least one or two prominent landmarks the robot passes along the way to provide context for long-distance movement.
+### OUTPUT CONSTRAINTS:
+- Create a continuous narrative using transitional phrases (e.g., "Continue past...", "Then, at the...").
+- Ground the instruction in the detected landmarks.
+- Ensure the instruction ends with a clear arrival/stop condition.
+- OUTPUT ONLY THE COMMAND STRING. No preamble.
 
-### Instructions:
-1. **Identify Landmarks:** Pick 1-2 unique, static objects the robot passes (e.g., "past the vending machine," "between the two sofas").
-2. **Identify Goal:** Specify the final target with distinguishing attributes.
-3. **Sequential Logic:** Use transitional words like "past," "following," or "after passing."
-4. **Termination Signal:** Always end with an explicit command to "stop" or "halt" at the destination.
-
-### Examples:
-- Input: [Robot passes a water cooler, then a blue chair, then reaches a wooden desk]
-  Output: Navigate past the water cooler and the blue chair, then stop at the wooden desk.
-- Input: [Robot moves down a hallway, passes an elevator, and stops at room 402]
-  Output: Move down the hallway past the elevator and stop directly in front of the door to room 402.
-- Input: [Robot turns at a large plant and approaches a glass table]
-  Output: Turn at the large potted plant and proceed to the glass table, then halt.
-
-### Constraints:
-- Output ONLY the command.
-- Focus on static, reliable landmarks.
-- No preamble and no description of camera motion.
+### EXAMPLE SYNTHESIS:
+Notes: [Batch 1: Hallway, moving forward] [Batch 2: Pass red bin, turn right] [Batch 3: Approaching glass door]
+Output: Move down the hallway past the red bin, then turn right and proceed until you reach the glass door.
 """.strip()
 
 BATCH_NOTE_PROMPT_SUFFIX = """
+### LOCAL SEGMENT ANALYSIS
+You are looking at a 5-second slice of a robot's navigation. 
+Observe the sequence and extract the following:
 
-You are seeing a contiguous time segment of the full video.
-Extract concise notes for this segment only.
+1. LANDMARKS: List 1-2 distinct, static visual features (e.g., "blue locker," "fire extinguisher," "T-junction").
+2. EGO-MOTION: Describe the movement (e.g., "moving forward at constant speed," "executing a 90-degree left turn," "decelerating").
+3. TOPOLOGICAL CONTEXT: Describe the environment state (e.g., "entering a narrow hallway," "passing through a doorway," "opening into a lobby").
 
-Return exactly three lines:
-LANDMARKS: <comma-separated static landmarks or none>
-GOAL_CANDIDATE: <possible final destination seen in this segment or unknown>
-PATH_SNIPPET: <short command-like snippet for this segment>
+Return ONLY these three lines:
+LANDMARKS: <features or 'none'>
+MOTION: <vector/direction>
+CONTEXT: <surroundings>
 """.strip()
 
 
