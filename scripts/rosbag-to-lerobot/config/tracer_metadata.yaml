@@ -35,28 +35,28 @@ episodes:
   rosbag2_2026_04_24-08_07_33:
     task: Move past the room with the large window and the area with high tables, then proceed past the wooden counter and water dispenser, and stop at the large wooden double doors.
   rosbag2_2026_04_25-13_49_45:
-    task: Navigate past the wooden chairs and the black-covered table, then stop at the table with the white marble top.
+    task: Navigate to the table with the brown paper cups.
   rosbag2_2026_04_25-13_50_27:
     task: Navigate past the robotic arm on the black-clothed table and stop at the wooden tables and chairs.
   rosbag2_2026_04_25-13_51_14:
-    task: Navigate past the table with chairs and stop at the table with the red cup.
+    task: Navigate to the table with the red paper cups.
   rosbag2_2026_04_25-13_52_17:
-    task: Navigate past the grey pillar and the table with the robotic arms, then stop at the glass wall.
+    task: Navigate past the robotic arms, then stop at the black-clothed table.
   rosbag2_2026_04_25-13_53_09:
-    task: Navigate past the table in the background and stop at the white marble-top table.
+    task: Navigate to the table with the brown paper cups.
   rosbag2_2026_04_25-13_53_42:
-    task: Navigate past the table and the grey pillar, then continue forward until you reach the end of the hallway.
+    task: Navigate past the robotic arms, then stop at the black-clothed table.
   rosbag2_2026_04_25-13_54_23:
-    task: Navigate past the glass doors and the table with red cups, then stop at the white marble-top table.
+    task: Navigate to the table with the red paper cups.
   rosbag2_2026_04_25-13_55_37:
-    task: Navigate past the tables with wooden folding chairs and the equipment table, then stop at the black and white marker.
+    task: Navigate to the table withthe black and white marker and the sandwich.
   rosbag2_2026_04_25-13_56_33:
-    task: Move past the robotic arm and the large wooden wall, then stop at the black cloth-covered table.
+    task: Navigate past the robotic arms, then stop at the black-clothed table.
   rosbag2_2026_04_25-14_00_26:
-    task: Navigate past the table with red cups and the glass partitions, then stop at the white marble-top table.
+    task: Navigate past the table with red cups and the glass partitions, then stop at the table with plates.
   rosbag2_2026_04_25-14_01_36:
     task: Navigate past the glass walls and stop at the black-clothed table with robotic arms.
   rosbag2_2026_04_25-14_02_39:
-    task: Navigate past the table with equipment and the table with wooden folding chairs, then stop at the table with the sandwich.
+    task: Navigate to the table with the sandwich.
   rosbag2_2026_04_25-14_03_32:
-    task: Navigate past the robotic arm on the black-clothed table and stop in front of the large wooden wall.
+    task: Navigate past the robotic arms, then stop at the black-clothed table.
