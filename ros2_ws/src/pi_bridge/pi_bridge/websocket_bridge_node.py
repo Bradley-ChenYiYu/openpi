@@ -1,4 +1,6 @@
 import base64
+import concurrent.futures
+from collections import deque
 import json
 import os
 from pathlib import Path
@@ -13,6 +15,10 @@ import rclpy
 from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry
 from rclpy.node import Node
+from rclpy.qos import DurabilityPolicy
+from rclpy.qos import HistoryPolicy
+from rclpy.qos import QoSProfile
+from rclpy.qos import ReliabilityPolicy
 from sensor_msgs.msg import CompressedImage
 from sensor_msgs.msg import Image
 from std_msgs.msg import String
@@ -191,6 +197,7 @@ class PiWebsocketBridgeNode(Node):
         self.declare_parameter("max_reconnect_interval_sec", 8.0)
         self.declare_parameter("sync_tolerance_sec", 0.25)
         self.declare_parameter("prompt", "do something")
+        self.declare_parameter("action_rate_hz", 20.0)
 
         self._websocket_host = str(self.get_parameter("websocket_host").value)
         self._websocket_port = int(self.get_parameter("websocket_port").value)
@@ -200,6 +207,7 @@ class PiWebsocketBridgeNode(Node):
         self._send_rate_hz = float(self.get_parameter("send_rate_hz").value)
         self._sync_tolerance_sec = float(self.get_parameter("sync_tolerance_sec").value)
         self._prompt = self.get_parameter("prompt").value
+        self._action_rate_hz = float(self.get_parameter("action_rate_hz").value)
 
         self._latest_image: BufferedImage | None = None
         self._latest_odom: BufferedOdometry | None = None
@@ -216,6 +224,12 @@ class PiWebsocketBridgeNode(Node):
         self._last_sync_drop_log_ns = 0
         self._last_missing_actions_log_ns = 0
         self._start_time_ns = self.get_clock().now().nanoseconds
+        self._infer_executor = concurrent.futures.ThreadPoolExecutor(max_workers=1, thread_name_prefix="pi-infer")
+        self._infer_future: concurrent.futures.Future | None = None
+        self._infer_sent_ns: int = 0
+        self._pending_actions: deque[tuple[float, float]] = deque()
+        self._action_lock = threading.Lock()
+        self._last_action: tuple[float, float] | None = None
 
         image_topic = self.get_parameter("image_topic").value
         odom_topic = self.get_parameter("odom_topic").value
@@ -234,7 +248,14 @@ class PiWebsocketBridgeNode(Node):
         raw_response_topic = self.get_parameter("raw_response_topic").value
         diagnostics_topic = self.get_parameter("diagnostics_topic").value
 
-        self._inferred_cmd_pub = self.create_publisher(Twist, inferred_cmd_topic, self._queue_size)
+        inferred_cmd_qos = QoSProfile(
+            history=HistoryPolicy.KEEP_ALL,
+            depth=1,
+            reliability=ReliabilityPolicy.RELIABLE,
+            durability=DurabilityPolicy.VOLATILE,
+        )
+
+        self._inferred_cmd_pub = self.create_publisher(Twist, inferred_cmd_topic, inferred_cmd_qos)
         self._ack_pub = self.create_publisher(String, ack_topic, self._queue_size)
         self._raw_pub = self.create_publisher(String, raw_response_topic, self._queue_size)
         self._diag_pub = self.create_publisher(String, diagnostics_topic, self._queue_size)
@@ -256,18 +277,22 @@ class PiWebsocketBridgeNode(Node):
         self._manager.start()
 
         send_period = 1.0 / max(self._send_rate_hz, 1e-3)
+        action_period = 1.0 / max(self._action_rate_hz, 1e-3)
         self._send_timer = self.create_timer(send_period, self._on_send_timer)
+        self._cmd_timer = self.create_timer(action_period, self._on_cmd_timer)
         self._diag_timer = self.create_timer(1.0, self._publish_diagnostics)
 
         self.get_logger().info(
             "Bridge config: "
             f"image_topic={image_topic}, image_topic_type={image_topic_type}, "
             f"odom_topic={odom_topic}, inferred_cmd_topic={inferred_cmd_topic}, "
-            f"send_rate_hz={self._send_rate_hz}, sync_tolerance_sec={self._sync_tolerance_sec}"
+            f"send_rate_hz={self._send_rate_hz}, action_rate_hz={self._action_rate_hz}, "
+            f"sync_tolerance_sec={self._sync_tolerance_sec}"
         )
 
     def destroy_node(self) -> bool:
         self._manager.stop()
+        self._infer_executor.shutdown(wait=False, cancel_futures=True)
         return super().destroy_node()
 
     def _on_connected(self) -> None:
@@ -376,6 +401,8 @@ class PiWebsocketBridgeNode(Node):
         raise ValueError(f"Unsupported Image encoding: {msg.encoding}")
 
     def _on_send_timer(self) -> None:
+        self._drain_infer_result()
+
         if not self._manager.connected:
             return
 
@@ -420,15 +447,34 @@ class PiWebsocketBridgeNode(Node):
             "prompt": self._prompt,
         }
 
-        sent_ns = self.get_clock().now().nanoseconds
-        response = self._manager.infer(request)
+        if self._infer_future is not None and not self._infer_future.done():
+            self._dropped_frames += 1
+            return
+
+        self._infer_sent_ns = self.get_clock().now().nanoseconds
+        self._infer_future = self._infer_executor.submit(self._manager.infer, request)
+        self._total_sent += 1
+
+    def _drain_infer_result(self) -> None:
+        if self._infer_future is None or not self._infer_future.done():
+            return
+
+        future = self._infer_future
+        self._infer_future = None
+
+        try:
+            response = future.result()
+        except Exception as exc:
+            self._parse_failures += 1
+            self.get_logger().warning(f"Infer future failed: {exc}")
+            return
+
         if response is None:
             self._dropped_frames += 1
             return
 
         recv_ns = self.get_clock().now().nanoseconds
-        self._last_latency_ms = (recv_ns - sent_ns) / 1e6
-        self._total_sent += 1
+        self._last_latency_ms = (recv_ns - self._infer_sent_ns) / 1e6
         self._total_responses += 1
         response_keys = [str(k) for k in response.keys()]
         self.get_logger().debug(
@@ -436,11 +482,11 @@ class PiWebsocketBridgeNode(Node):
             f"keys={sorted(response_keys)}"
         )
 
-        self._publish_inferred_cmd(response)
+        self._enqueue_inferred_actions(response)
         self._publish_ack(response)
         self._publish_raw_response(response)
 
-    def _publish_inferred_cmd(self, response: dict[str, Any]) -> None:
+    def _enqueue_inferred_actions(self, response: dict[str, Any]) -> None:
         actions = self._response_get(response, "actions")
         if actions is None:
             now_ns = self.get_clock().now().nanoseconds
@@ -453,24 +499,48 @@ class PiWebsocketBridgeNode(Node):
 
         try:
             arr = np.asarray(actions)
-            if arr.ndim == 2:
-                linear_x = float(arr[0, 0])
-                angular_z = float(arr[0, 1])
+            queued_actions: list[tuple[float, float]] = []
+
+            if arr.ndim == 2 and arr.shape[1] >= 2:
+                for row in arr:
+                    queued_actions.append((float(row[0]), float(row[1])))
             elif arr.ndim == 1 and arr.shape[0] >= 2:
-                linear_x = float(arr[0])
-                angular_z = float(arr[1])
+                queued_actions.append((float(arr[0]), float(arr[1])))
             else:
                 self.get_logger().warning(f"Unsupported actions shape for cmd publish: shape={arr.shape}, ndim={arr.ndim}")
                 return
 
-            msg = Twist()
-            msg.linear.x = linear_x
-            msg.angular.z = angular_z
-            self._inferred_cmd_pub.publish(msg)
-            self.get_logger().debug(f"Published inferred cmd: linear_x={linear_x:.4f}, angular_z={angular_z:.4f}")
+            if not queued_actions:
+                return
+
+            # Replace stale queued commands with the latest model rollout.
+            with self._action_lock:
+                self._pending_actions.clear()
+                self._pending_actions.extend(queued_actions)
+
         except Exception as exc:
             self._parse_failures += 1
-            self.get_logger().warning(f"Failed to publish inferred cmd: {exc}")
+            self.get_logger().warning(f"Failed to queue inferred cmd: {exc}")
+
+    def _on_cmd_timer(self) -> None:
+        action: tuple[float, float] | None = None
+        with self._action_lock:
+            if self._pending_actions:
+                action = self._pending_actions.popleft()
+                self._last_action = action
+            else:
+                action = self._last_action
+
+        if action is None:
+            return
+
+        msg = Twist()
+        msg.linear.x = action[0]
+        msg.angular.z = action[1]
+        self._inferred_cmd_pub.publish(msg)
+        self.get_logger().debug(
+            f"Published inferred cmd: linear_x={action[0]:.4f}, angular_z={action[1]:.4f}"
+        )
 
     def _publish_ack(self, response: dict[str, Any]) -> None:
         payload = {
@@ -489,6 +559,9 @@ class PiWebsocketBridgeNode(Node):
         self._raw_pub.publish(msg)
 
     def _publish_diagnostics(self) -> None:
+        with self._action_lock:
+            pending_actions = len(self._pending_actions)
+
         diag = {
             "connected": self._manager.connected,
             "sent": self._total_sent,
@@ -496,6 +569,7 @@ class PiWebsocketBridgeNode(Node):
             "dropped_frames": self._dropped_frames,
             "parse_failures": self._parse_failures,
             "latency_ms": round(self._last_latency_ms, 2),
+            "pending_actions": pending_actions,
         }
         msg = String()
         msg.data = json.dumps(diag)
