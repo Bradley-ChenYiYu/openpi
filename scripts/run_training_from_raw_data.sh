@@ -17,13 +17,13 @@ cd "$repo_root"
 # ===== Pipeline Step Configuration =====
 # Available steps: 1=rosbag2video, 2=generate_vid_prompt_ollama, 3=convert_rosbag, 4=compute_stats, 5=wandb_login_and_train
 # Example: START_STEP=5 to skip to wandb login and training
-START_STEP="${START_STEP:-3}"
+START_STEP="${START_STEP:-2}"
 
 # ===== Path Variables =====
-CONFIG_NAME="pi0_tracer_finetune"
-METADATA_CONFIG="scripts/rosbag-to-lerobot/config/tracer_metadata.yaml"
-TOPIC_MAPPING_CONFIG="scripts/rosbag-to-lerobot/config/tracer_topic_mapping.yaml"
-ROSBAG_DIR="rosbag_dir/rosbag_dir_20260425/"
+CONFIG_NAME="pi0_tracer_side_finetune"
+METADATA_CONFIG="scripts/rosbag-to-lerobot/config/tracer_side_views_metadata.yaml"
+TOPIC_MAPPING_CONFIG="scripts/rosbag-to-lerobot/config/tracer_side_views_topic_mapping.yaml"
+ROSBAG_DIR="rosbag_dir/rosbag_dir_20260430"
 ROSBAG2VIDEO_RATE="50"
 
 # ===== generate_vid_prompt_ollama.py Variables =====
@@ -32,7 +32,7 @@ VID_PROMPT_PARENT_DIR="$ROSBAG_DIR"
 
 # ===== convert_rosbag_to_lerobot.py Variables =====
 CONVERT_INPUT_BAG_PATH="$ROSBAG_DIR"
-CONVERT_REPO_ID="brad/tracer_data_stop"
+CONVERT_REPO_ID="brad/tracer_data_side_views"
 CONVERT_ROBOT_TYPE="tracer"
 CONVERT_FPS="50"
 CONVERT_CONFIG_PATH="$TOPIC_MAPPING_CONFIG"
@@ -44,7 +44,7 @@ COMPUTE_NORM_CONFIG_NAME="$CONFIG_NAME"
 
 # ===== train.py Variables =====
 TRAIN_CONFIG_NAME="$CONFIG_NAME"
-TRAIN_EXP_NAME="pi0_tracer_soc3f_cafe_with_data_stop"
+TRAIN_EXP_NAME="pi0_tracer_side_finetune_$(date +%Y%m%d_%H%M%S)"
 TRAIN_OVERWRITE_FLAG="--overwrite"
 TRAIN_XLA_MEM_FRACTION="0.9"
 TRAIN_OUTPUT_LOG="train_output_${TRAIN_EXP_NAME}.log"
