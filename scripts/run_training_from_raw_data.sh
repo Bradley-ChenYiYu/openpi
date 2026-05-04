@@ -20,9 +20,9 @@ cd "$repo_root"
 START_STEP="${START_STEP:-5}"
 
 # ===== Path Variables =====
-CONFIG_NAME="pi0_tracer_front_left_finetune"
+CONFIG_NAME="pi0_tracer_front_right_finetune"
 METADATA_CONFIG="scripts/rosbag-to-lerobot/config/tracer_side_views_metadata.yaml"
-TOPIC_MAPPING_CONFIG="scripts/rosbag-to-lerobot/config/tracer_front_left_views_topic_mapping.yaml"
+TOPIC_MAPPING_CONFIG="scripts/rosbag-to-lerobot/config/tracer_front_right_views_topic_mapping.yaml"
 ROSBAG_DIR="rosbag_dir/rosbag_dir_20260430"
 ROSBAG2VIDEO_RATE="50"
 
@@ -44,7 +44,7 @@ COMPUTE_NORM_CONFIG_NAME="$CONFIG_NAME"
 
 # ===== train.py Variables =====
 TRAIN_CONFIG_NAME="$CONFIG_NAME"
-TRAIN_EXP_NAME="pi0_tracer_front_left_views_finetune_$(date +%Y%m%d_%H%M%S)"
+TRAIN_EXP_NAME="pi0_tracer_front_right_views_finetune_$(date +%Y%m%d_%H%M%S)"
 TRAIN_OVERWRITE_FLAG="--overwrite"
 TRAIN_XLA_MEM_FRACTION="0.9"
 TRAIN_OUTPUT_LOG="train_output_${TRAIN_EXP_NAME}.log"
