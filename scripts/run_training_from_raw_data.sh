@@ -48,6 +48,7 @@ TRAIN_EXP_NAME="pi0_tracer_front_right_views_finetune_$(date +%Y%m%d_%H%M%S)"
 TRAIN_OVERWRITE_FLAG="--overwrite"
 TRAIN_XLA_MEM_FRACTION="0.9"
 TRAIN_OUTPUT_LOG="train_output_${TRAIN_EXP_NAME}.log"
+TRAIN_IN_BACKGROUND="${TRAIN_IN_BACKGROUND:-1}"
 
 # ===== Environment Variable Checks =====
 if [[ -z "${WANDB_API_KEY:-}" ]]; then
@@ -120,11 +121,21 @@ if [[ $START_STEP -le 5 ]]; then
     echo "Step 5/5: Logging into Weights & Biases..."
     uv run wandb login
     echo "Step 5/5: Starting model training..."
-    XLA_PYTHON_CLIENT_MEM_FRACTION="$TRAIN_XLA_MEM_FRACTION" nohup uv run scripts/train.py "$TRAIN_CONFIG_NAME" \
-        --exp-name="$TRAIN_EXP_NAME" \
-        "$TRAIN_OVERWRITE_FLAG" \
-        > "$TRAIN_OUTPUT_LOG" 2>&1
-    echo "✓ Step 5 completed (training running in background)"
+    echo "Training configuration: $TRAIN_CONFIG_NAME"
+    echo "Training experiment name: $TRAIN_EXP_NAME"
+    if [[ "$TRAIN_IN_BACKGROUND" == "1" ]]; then
+        XLA_PYTHON_CLIENT_MEM_FRACTION="$TRAIN_XLA_MEM_FRACTION" nohup uv run scripts/train.py "$TRAIN_CONFIG_NAME" \
+            --exp-name="$TRAIN_EXP_NAME" \
+            "$TRAIN_OVERWRITE_FLAG" \
+            > "$TRAIN_OUTPUT_LOG" 2>&1
+        echo "✓ Step 5 completed (training running in background)"
+    else
+        XLA_PYTHON_CLIENT_MEM_FRACTION="$TRAIN_XLA_MEM_FRACTION" uv run scripts/train.py "$TRAIN_CONFIG_NAME" \
+            --exp-name="$TRAIN_EXP_NAME" \
+            "$TRAIN_OVERWRITE_FLAG" \
+            2>&1 | tee "$TRAIN_OUTPUT_LOG"
+        echo "✓ Step 5 completed (training finished in foreground)"
+    fi
 else
     echo "⊘ Step 5 skipped"
 fi
