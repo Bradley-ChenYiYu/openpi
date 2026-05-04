@@ -20,7 +20,10 @@ import openpi.models.tokenizer as _tokenizer
 import openpi.policies.aloha_policy as aloha_policy
 import openpi.policies.droid_policy as droid_policy
 import openpi.policies.libero_policy as libero_policy
+import openpi.policies.tracer_front_left_policy as tracer_front_left_policy
+import openpi.policies.tracer_front_right_policy as tracer_front_right_policy
 import openpi.policies.tracer_policy as tracer_policy
+import openpi.policies.tracer_side_policy as tracer_side_policy
 import openpi.shared.download as _download
 import openpi.shared.normalize as _normalize
 import openpi.training.droid_rlds_dataset as droid_rlds_dataset
@@ -491,6 +494,142 @@ class LeRobotTracerDataConfig(DataConfigFactory):
         )
 
         # Both tracer action dimensions are control commands (linear_x, angular_z).
+        delta_action_mask = _transforms.make_bool_mask(2, -1)
+        if self.use_delta_actions:
+            data_transforms = data_transforms.push(
+                inputs=[_transforms.DeltaActions(delta_action_mask)],
+                outputs=[_transforms.AbsoluteActions(delta_action_mask)],
+            )
+
+        model_transforms = ModelTransformFactory()(model_config)
+
+        return dataclasses.replace(
+            self.create_base_config(assets_dirs, model_config),
+            repack_transforms=repack_transform,
+            data_transforms=data_transforms,
+            model_transforms=model_transforms,
+            action_sequence_keys=("action",),
+        )
+
+
+@dataclasses.dataclass(frozen=True)
+class LeRobotTracerSideDataConfig(DataConfigFactory):
+    """Data config for Tracer datasets with front, left, and right cameras."""
+
+    use_delta_actions: bool = False
+
+    @override
+    def create(self, assets_dirs: pathlib.Path, model_config: _model.BaseModelConfig) -> DataConfig:
+        repack_transform = _transforms.Group(
+            inputs=[
+                _transforms.RepackTransform(
+                    {
+                        "observation/front_image": "observation.images.front",
+                        "observation/left_image": "observation.images.left",
+                        "observation/right_image": "observation.images.right",
+                        "observation/state": "observation.state",
+                        "actions": "action",
+                        "prompt": "task",
+                    }
+                )
+            ]
+        )
+
+        data_transforms = _transforms.Group(
+            inputs=[tracer_side_policy.TracerSideInputs(model_type=model_config.model_type)],
+            outputs=[tracer_side_policy.TracerSideOutputs()],
+        )
+
+        delta_action_mask = _transforms.make_bool_mask(2, -1)
+        if self.use_delta_actions:
+            data_transforms = data_transforms.push(
+                inputs=[_transforms.DeltaActions(delta_action_mask)],
+                outputs=[_transforms.AbsoluteActions(delta_action_mask)],
+            )
+
+        model_transforms = ModelTransformFactory()(model_config)
+
+        return dataclasses.replace(
+            self.create_base_config(assets_dirs, model_config),
+            repack_transforms=repack_transform,
+            data_transforms=data_transforms,
+            model_transforms=model_transforms,
+            action_sequence_keys=("action",),
+        )
+
+
+@dataclasses.dataclass(frozen=True)
+class LeRobotTracerFrontLeftDataConfig(DataConfigFactory):
+    """Data config for Tracer datasets with front and left cameras."""
+
+    use_delta_actions: bool = False
+
+    @override
+    def create(self, assets_dirs: pathlib.Path, model_config: _model.BaseModelConfig) -> DataConfig:
+        repack_transform = _transforms.Group(
+            inputs=[
+                _transforms.RepackTransform(
+                    {
+                        "observation/front_image": "observation.images.front",
+                        "observation/left_image": "observation.images.left",
+                        "observation/state": "observation.state",
+                        "actions": "action",
+                        "prompt": "task",
+                    }
+                )
+            ]
+        )
+
+        data_transforms = _transforms.Group(
+            inputs=[tracer_front_left_policy.TracerFrontLeftInputs(model_type=model_config.model_type)],
+            outputs=[tracer_front_left_policy.TracerFrontLeftOutputs()],
+        )
+
+        delta_action_mask = _transforms.make_bool_mask(2, -1)
+        if self.use_delta_actions:
+            data_transforms = data_transforms.push(
+                inputs=[_transforms.DeltaActions(delta_action_mask)],
+                outputs=[_transforms.AbsoluteActions(delta_action_mask)],
+            )
+
+        model_transforms = ModelTransformFactory()(model_config)
+
+        return dataclasses.replace(
+            self.create_base_config(assets_dirs, model_config),
+            repack_transforms=repack_transform,
+            data_transforms=data_transforms,
+            model_transforms=model_transforms,
+            action_sequence_keys=("action",),
+        )
+
+
+@dataclasses.dataclass(frozen=True)
+class LeRobotTracerFrontRightDataConfig(DataConfigFactory):
+    """Data config for Tracer datasets with front and right cameras."""
+
+    use_delta_actions: bool = False
+
+    @override
+    def create(self, assets_dirs: pathlib.Path, model_config: _model.BaseModelConfig) -> DataConfig:
+        repack_transform = _transforms.Group(
+            inputs=[
+                _transforms.RepackTransform(
+                    {
+                        "observation/front_image": "observation.images.front",
+                        "observation/right_image": "observation.images.right",
+                        "observation/state": "observation.state",
+                        "actions": "action",
+                        "prompt": "task",
+                    }
+                )
+            ]
+        )
+
+        data_transforms = _transforms.Group(
+            inputs=[tracer_front_right_policy.TracerFrontRightInputs(model_type=model_config.model_type)],
+            outputs=[tracer_front_right_policy.TracerFrontRightOutputs()],
+        )
+
         delta_action_mask = _transforms.make_bool_mask(2, -1)
         if self.use_delta_actions:
             data_transforms = data_transforms.push(
@@ -1009,6 +1148,42 @@ _CONFIGS = [
         #     decay_steps=1_000_000,
         #     decay_lr=5e-5,
         # ),
+    ),
+    TrainConfig(
+        name="pi0_tracer_side_finetune",
+        model=pi0_config.Pi0Config(),
+        data=LeRobotTracerSideDataConfig(
+            repo_id="brad/tracer_data_side_views",
+            base_config=DataConfig(prompt_from_task=True),
+        ),
+        weight_loader=weight_loaders.CheckpointWeightLoader("gs://openpi-assets/checkpoints/pi0_base/params"),
+        num_train_steps=5_000,
+        batch_size=32,
+        # num_workers=0,
+    ),
+    TrainConfig(
+        name="pi0_tracer_front_left_finetune",
+        model=pi0_config.Pi0Config(),
+        data=LeRobotTracerFrontLeftDataConfig(
+            repo_id="brad/tracer_data_side_views",
+            base_config=DataConfig(prompt_from_task=True),
+        ),
+        weight_loader=weight_loaders.CheckpointWeightLoader("gs://openpi-assets/checkpoints/pi0_base/params"),
+        num_train_steps=5_000,
+        batch_size=32,
+        # num_workers=0,
+    ),
+    TrainConfig(
+        name="pi0_tracer_front_right_finetune",
+        model=pi0_config.Pi0Config(),
+        data=LeRobotTracerFrontRightDataConfig(
+            repo_id="brad/tracer_data_side_views",
+            base_config=DataConfig(prompt_from_task=True),
+        ),
+        weight_loader=weight_loaders.CheckpointWeightLoader("gs://openpi-assets/checkpoints/pi0_base/params"),
+        num_train_steps=5_000,
+        batch_size=32,
+        # num_workers=0,
     ),
     #
     # ALOHA Sim configs. This config is used to demonstrate how to train on a simple simulated environment.
