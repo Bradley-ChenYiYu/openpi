@@ -17,12 +17,12 @@ cd "$repo_root"
 # ===== Pipeline Step Configuration =====
 # Available steps: 1=rosbag2video, 2=generate_vid_prompt_ollama, 3=convert_rosbag, 4=compute_stats, 5=wandb_login_and_train
 # Example: START_STEP=5 to skip to wandb login and training
-START_STEP="${START_STEP:-2}"
+START_STEP="${START_STEP:-5}"
 
 # ===== Path Variables =====
-CONFIG_NAME="pi0_tracer_side_finetune"
+CONFIG_NAME="pi0_tracer_front_left_finetune"
 METADATA_CONFIG="scripts/rosbag-to-lerobot/config/tracer_side_views_metadata.yaml"
-TOPIC_MAPPING_CONFIG="scripts/rosbag-to-lerobot/config/tracer_side_views_topic_mapping.yaml"
+TOPIC_MAPPING_CONFIG="scripts/rosbag-to-lerobot/config/tracer_front_left_views_topic_mapping.yaml"
 ROSBAG_DIR="rosbag_dir/rosbag_dir_20260430"
 ROSBAG2VIDEO_RATE="50"
 
@@ -44,7 +44,7 @@ COMPUTE_NORM_CONFIG_NAME="$CONFIG_NAME"
 
 # ===== train.py Variables =====
 TRAIN_CONFIG_NAME="$CONFIG_NAME"
-TRAIN_EXP_NAME="pi0_tracer_side_finetune_$(date +%Y%m%d_%H%M%S)"
+TRAIN_EXP_NAME="pi0_tracer_front_left_views_finetune_$(date +%Y%m%d_%H%M%S)"
 TRAIN_OVERWRITE_FLAG="--overwrite"
 TRAIN_XLA_MEM_FRACTION="0.9"
 TRAIN_OUTPUT_LOG="train_output_${TRAIN_EXP_NAME}.log"
@@ -123,7 +123,7 @@ if [[ $START_STEP -le 5 ]]; then
     XLA_PYTHON_CLIENT_MEM_FRACTION="$TRAIN_XLA_MEM_FRACTION" nohup uv run scripts/train.py "$TRAIN_CONFIG_NAME" \
         --exp-name="$TRAIN_EXP_NAME" \
         "$TRAIN_OVERWRITE_FLAG" \
-        > "$TRAIN_OUTPUT_LOG" 2>&1 &
+        > "$TRAIN_OUTPUT_LOG" 2>&1
     echo "✓ Step 5 completed (training running in background)"
 else
     echo "⊘ Step 5 skipped"
