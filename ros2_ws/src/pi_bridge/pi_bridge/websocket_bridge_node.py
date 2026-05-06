@@ -184,7 +184,11 @@ class PiWebsocketBridgeNode(Node):
         self.declare_parameter("websocket_host", "127.0.0.1")
         self.declare_parameter("websocket_port", 8000)
         self.declare_parameter("api_key", "")
+        self.declare_parameter("robot_config", "tracer")
         self.declare_parameter("image_topic", "/camera/camera/color/image_raw")
+        self.declare_parameter("front_image_topic", "/camera/front/color/image_raw")
+        self.declare_parameter("left_image_topic", "/camera/left/color/image_raw")
+        self.declare_parameter("right_image_topic", "/camera/right/color/image_raw")
         self.declare_parameter("odom_topic", "/odom")
         self.declare_parameter("image_topic_type", "image")
         self.declare_parameter("inferred_cmd_topic", "/pi_bridge/inferred_cmd_vel")
@@ -203,13 +207,14 @@ class PiWebsocketBridgeNode(Node):
         self._websocket_port = int(self.get_parameter("websocket_port").value)
         api_key = str(self.get_parameter("api_key").value)
         self._api_key = api_key if api_key else None
+        self._robot_config = str(self.get_parameter("robot_config").value)
         self._queue_size = int(self.get_parameter("queue_size").value)
         self._send_rate_hz = float(self.get_parameter("send_rate_hz").value)
         self._sync_tolerance_sec = float(self.get_parameter("sync_tolerance_sec").value)
         self._prompt = self.get_parameter("prompt").value
         self._action_rate_hz = float(self.get_parameter("action_rate_hz").value)
 
-        self._latest_image: BufferedImage | None = None
+        self._latest_images: dict[str, BufferedImage] = {}
         self._latest_odom: BufferedOdometry | None = None
         self._lock = threading.Lock()
 
@@ -219,7 +224,7 @@ class PiWebsocketBridgeNode(Node):
         self._parse_failures = 0
         self._last_latency_ms = 0.0
         self._first_odom_logged = False
-        self._first_image_logged = False
+        self._first_images_logged: set[str] = set()
         self._last_waiting_data_log_ns = 0
         self._last_sync_drop_log_ns = 0
         self._last_missing_actions_log_ns = 0
@@ -236,12 +241,37 @@ class PiWebsocketBridgeNode(Node):
         image_topic_type = self.get_parameter("image_topic_type").value.lower().strip()
 
         self._odom_sub = self.create_subscription(Odometry, odom_topic, self._on_odom, self._queue_size)
-        if image_topic_type == "compressed":
-            self._img_sub = self.create_subscription(
-                CompressedImage, image_topic, self._on_compressed_image, self._queue_size
-            )
-        else:
-            self._img_sub = self.create_subscription(Image, image_topic, self._on_image, self._queue_size)
+        
+        # Robot configuration mapping: robot_config -> {observation_key: parameter_name}
+        config_map = {
+            "tracer": {"observation/image": "image_topic"},
+            "tracer_front_right": {
+                "observation/front_image": "front_image_topic",
+                "observation/right_image": "right_image_topic",
+            },
+            "tracer_front_left": {
+                "observation/front_image": "front_image_topic",
+                "observation/left_image_topic": "left_image_topic",
+            },
+            "tracer_side": {
+                "observation/front_image": "front_image_topic",
+                "observation/left_image": "left_image_topic",
+                "observation/right_image": "right_image_topic",
+            },
+        }
+        
+        self._required_images = config_map.get(self._robot_config, config_map["tracer"])
+        
+        for obs_key, param_name in self._required_images.items():
+            topic = self.get_parameter(param_name).value
+            if image_topic_type == "compressed":
+                self.create_subscription(
+                    CompressedImage, topic, lambda msg, k=obs_key: self._on_compressed_image(msg, k), self._queue_size
+                )
+            else:
+                self.create_subscription(
+                    Image, topic, lambda msg, k=obs_key: self._on_image(msg, k), self._queue_size
+                )
 
         inferred_cmd_topic = self.get_parameter("inferred_cmd_topic").value
         ack_topic = self.get_parameter("ack_topic").value
@@ -323,47 +353,47 @@ class PiWebsocketBridgeNode(Node):
                 f"linear_x={msg.twist.twist.linear.x:.4f}, angular_z={msg.twist.twist.angular.z:.4f}"
             )
 
-    def _on_image(self, msg: Image) -> None:
+    def _on_image(self, msg: Image, key: str) -> None:
         try:
             image_array = self._image_msg_to_array(msg)
             stamp_ns = self._stamp_to_ns(msg.header.stamp)
             with self._lock:
-                self._latest_image = BufferedImage(
+                self._latest_images[key] = BufferedImage(
                     stamp_ns=stamp_ns,
                     frame_id=msg.header.frame_id,
                     image_array=image_array,
                 )
-            if not self._first_image_logged:
-                self._first_image_logged = True
+            if key not in self._first_images_logged:
+                self._first_images_logged.add(key)
                 self.get_logger().info(
-                    f"First image received: stamp_ns={stamp_ns}, frame_id={msg.header.frame_id}, "
+                    f"First image received for {key}: stamp_ns={stamp_ns}, frame_id={msg.header.frame_id}, "
                     f"shape={image_array.shape}, encoding={msg.encoding}"
                 )
         except Exception as exc:
             self._parse_failures += 1
-            self.get_logger().warning(f"Failed to parse Image message: {exc}")
+            self.get_logger().warning(f"Failed to parse Image message for {key}: {exc}")
 
-    def _on_compressed_image(self, msg: CompressedImage) -> None:
+    def _on_compressed_image(self, msg: CompressedImage, key: str) -> None:
         try:
             stamp_ns = self._stamp_to_ns(msg.header.stamp)
             # For compressed streams, we cannot reliably decode without extra deps.
             # Keep inference image as a placeholder until decode support is added.
             image_array = np.zeros((224, 224, 3), dtype=np.uint8)
             with self._lock:
-                self._latest_image = BufferedImage(
+                self._latest_images[key] = BufferedImage(
                     stamp_ns=stamp_ns,
                     frame_id=msg.header.frame_id,
                     image_array=image_array,
                 )
-            if not self._first_image_logged:
-                self._first_image_logged = True
+            if key not in self._first_images_logged:
+                self._first_images_logged.add(key)
                 self.get_logger().info(
-                    f"First compressed image placeholder received: stamp_ns={stamp_ns}, "
+                    f"First compressed image placeholder received for {key}: stamp_ns={stamp_ns}, "
                     f"frame_id={msg.header.frame_id}, shape={image_array.shape}"
                 )
         except Exception as exc:
             self._parse_failures += 1
-            self.get_logger().warning(f"Failed to parse CompressedImage message: {exc}")
+            self.get_logger().warning(f"Failed to parse CompressedImage message for {key}: {exc}")
 
     def _image_msg_to_array(self, msg: Image) -> np.ndarray:
         height = int(msg.height)
@@ -407,45 +437,49 @@ class PiWebsocketBridgeNode(Node):
             return
 
         with self._lock:
-            image = self._latest_image
+            images = self._latest_images
             odom = self._latest_odom
 
-        if image is None or odom is None:
+        if odom is None or any(key not in images for key in self._required_images):
             now_ns = self.get_clock().now().nanoseconds
             if now_ns - self._last_waiting_data_log_ns > 2_000_000_000:
                 self._last_waiting_data_log_ns = now_ns
                 uptime_sec = (now_ns - self._start_time_ns) / 1e9
                 if uptime_sec > 3.0:
                     self.get_logger().warning(
-                        f"Waiting for synced inputs before infer: have_image={image is not None}, "
-                        f"have_odom={odom is not None}, uptime_sec={uptime_sec:.1f}. "
-                        "If have_image=False, verify image_topic and image_topic_type match the actual camera topic type."
+                        f"Waiting for synced inputs before infer: have_odom={odom is not None}, "
+                        f"have_images={list(images.keys())}, uptime_sec={uptime_sec:.1f}. "
+                        "Verify image topics and robot_config match the actual camera setup."
                     )
                 else:
                     self.get_logger().info(
-                        f"Waiting for synced inputs before infer: have_image={image is not None}, "
-                        f"have_odom={odom is not None}"
+                        f"Waiting for synced inputs before infer: have_odom={odom is not None}, "
+                        f"have_images={list(images.keys())}"
                     )
             return
 
-        sync_diff_sec = abs(image.stamp_ns - odom.stamp_ns) / 1e9
-        if sync_diff_sec > self._sync_tolerance_sec:
-            self._dropped_frames += 1
-            now_ns = self.get_clock().now().nanoseconds
-            if now_ns - self._last_sync_drop_log_ns > 2_000_000_000:
-                self._last_sync_drop_log_ns = now_ns
-                self.get_logger().warning(
-                    f"Dropping frame due to timestamp mismatch: diff_sec={sync_diff_sec:.4f}, "
-                    f"image_stamp_ns={image.stamp_ns}, odom_stamp_ns={odom.stamp_ns}, "
-                    f"tolerance_sec={self._sync_tolerance_sec}"
-                )
-            return
+        # Sync check: ensure all required images are reasonably close in time to odom
+        for key in self._required_images:
+            img = images[key]
+            sync_diff_sec = abs(img.stamp_ns - odom.stamp_ns) / 1e9
+            if sync_diff_sec > self._sync_tolerance_sec:
+                self._dropped_frames += 1
+                now_ns = self.get_clock().now().nanoseconds
+                if now_ns - self._last_sync_drop_log_ns > 2_000_000_000:
+                    self._last_sync_drop_log_ns = now_ns
+                    self.get_logger().warning(
+                        f"Dropping frame due to timestamp mismatch for {key}: diff_sec={sync_diff_sec:.4f}, "
+                        f"image_stamp_ns={img.stamp_ns}, odom_stamp_ns={odom.stamp_ns}, "
+                        f"tolerance_sec={self._sync_tolerance_sec}"
+                    )
+                return
 
         request = {
             "observation/state": np.asarray([odom.linear_x, odom.angular_z], dtype=np.float32),
-            "observation/image": image.image_array,
             "prompt": self._prompt,
         }
+        for key in self._required_images:
+            request[key] = images[key].image_array
 
         if self._infer_future is not None and not self._infer_future.done():
             self._dropped_frames += 1
