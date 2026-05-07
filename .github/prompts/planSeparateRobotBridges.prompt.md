@@ -1,3 +1,35 @@
+# Refactoring Plan: Separate Robot Bridge Classes
+
+## Objective
+Separate general bridge utilities (Websocket, synchronization, data processing) from robot-specific configurations (ROS2 topics, observation keys, action mappings) using class inheritance.
+
+## Architecture
+
+### 1. Base Class: `PiWebsocketBridgeBase`
+Handles the "plumbing" and is agnostic to the specific robot.
+- **Websocket Management**: Integration with `WebsocketClientManager`.
+- **The Bridge Loop**: `_on_send_timer` and `_drain_infer_result`.
+- **Data Synchronization**: Timestamp checks and ensuring all required images are present.
+- **General Utilities**: `_image_msg_to_array`, `_stamp_to_ns`, `_jsonable`, and `_response_get`.
+- **Diagnostics**: `_publish_diagnostics`.
+- **Abstract Hooks**:
+    - `setup_robot_config()`
+    - `setup_subscriptions()`
+    - `setup_publishers()`
+    - `get_required_observations()`
+    - `prepare_observation_state()`
+    - `apply_action()`
+
+### 2. Derived Robot Classes
+Define the "mapping" for each specific robot configuration.
+- `TracerBridge`
+- `TracerSideBridge`
+- `TracerFrontLeftBridge`
+- `TracerFrontRightBridge`
+
+## Implementation
+
+```python
 import base64
 import concurrent.futures
 from collections import deque
@@ -15,42 +47,29 @@ import rclpy
 from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry
 from rclpy.node import Node
-from rclpy.qos import DurabilityPolicy
-from rclpy.qos import HistoryPolicy
-from rclpy.qos import QoSProfile
-from rclpy.qos import ReliabilityPolicy
-from sensor_msgs.msg import CompressedImage
-from sensor_msgs.msg import Image
+from rclpy.qos import DurabilityPolicy, HistoryPolicy, QoSProfile, ReliabilityPolicy
+from sensor_msgs.msg import CompressedImage, Image
 from std_msgs.msg import String
 
+# --- General Utilities (Agnostic to Robot) ---
 
 def _import_openpi_client_policy():
     try:
         from openpi_client import websocket_client_policy as client_policy
-
         return client_policy
     except ModuleNotFoundError:
-        candidate_roots = [
-            Path(os.environ.get("OPENPI_ROOT", "")),
-            Path("/openpi"),
-            Path.cwd(),
-        ]
+        candidate_roots = [Path(os.environ.get("OPENPI_ROOT", "")), Path("/openpi"), Path.cwd()]
         for root in candidate_roots:
-            if not root:
-                continue
+            if not root: continue
             candidate = root / "packages" / "openpi-client" / "src"
             if candidate.is_dir():
                 candidate_str = str(candidate)
-                if candidate_str not in sys.path:
-                    sys.path.append(candidate_str)
+                if candidate_str not in sys.path: sys.path.append(candidate_str)
                 from openpi_client import websocket_client_policy as client_policy
-
                 return client_policy
         raise
 
-
 _websocket_client_policy = _import_openpi_client_policy()
-
 
 @dataclass
 class BufferedImage:
@@ -58,124 +77,70 @@ class BufferedImage:
     frame_id: str
     image_array: np.ndarray
 
-
 @dataclass
 class BufferedOdometry:
     stamp_ns: int
     linear_x: float
     angular_z: float
 
-
 class WebsocketClientManager:
-    def __init__(
-        self,
-        *,
-        host: str,
-        port: int,
-        api_key: str | None,
-        reconnect_interval_sec: float,
-        max_reconnect_interval_sec: float,
-        logger,
-    ) -> None:
-        self._host = host
-        self._port = port
-        self._api_key = api_key
-        self._reconnect_interval_sec = reconnect_interval_sec
-        self._max_reconnect_interval_sec = max_reconnect_interval_sec
+    def __init__(self, *, host, port, api_key, reconnect_interval_sec, max_reconnect_interval_sec, logger):
+        self._host, self._port, self._api_key = host, port, api_key
+        self._reconnect_interval_sec, self._max_reconnect_interval_sec = reconnect_interval_sec, max_reconnect_interval_sec
         self._logger = logger
-
-        self._stop_event = threading.Event()
-        self._disconnect_event = threading.Event()
+        self._stop_event, self._disconnect_event = threading.Event(), threading.Event()
         self._client_lock = threading.Lock()
+        self._thread, self._client = None, None
+        self._on_connected = self._on_metadata = self._on_disconnected = self._on_error = None
 
-        self._thread: threading.Thread | None = None
-        self._client: _websocket_client_policy.WebsocketClientPolicy | None = None
+    def set_callbacks(self, *, on_connected, on_metadata, on_disconnected, on_error):
+        self._on_connected, self._on_metadata, self._on_disconnected, self._on_error = on_connected, on_metadata, on_disconnected, on_error
 
-        self._on_connected = None
-        self._on_metadata = None
-        self._on_disconnected = None
-        self._on_error = None
+    def start(self):
+        if self._thread is None:
+            self._thread = threading.Thread(target=self._run, name="ws-manager", daemon=True)
+            self._thread.start()
 
-    def set_callbacks(self, *, on_connected, on_metadata, on_disconnected, on_error) -> None:
-        self._on_connected = on_connected
-        self._on_metadata = on_metadata
-        self._on_disconnected = on_disconnected
-        self._on_error = on_error
-
-    def start(self) -> None:
-        if self._thread is not None:
-            return
-        self._thread = threading.Thread(target=self._run, name="ws-manager", daemon=True)
-        self._thread.start()
-
-    def stop(self) -> None:
-        self._stop_event.set()
-        self._disconnect_event.set()
-        if self._thread is not None:
-            self._thread.join(timeout=5.0)
+    def stop(self):
+        self._stop_event.set(); self._disconnect_event.set()
+        if self._thread: self._thread.join(timeout=5.0)
 
     @property
-    def connected(self) -> bool:
-        with self._client_lock:
-            return self._client is not None and not self._disconnect_event.is_set()
+    def connected(self):
+        with self._client_lock: return self._client is not None and not self._disconnect_event.is_set()
 
-    def infer(self, request: dict[str, Any]) -> dict[str, Any] | None:
-        with self._client_lock:
-            client = self._client
-
-        if client is None:
-            return None
-
-        try:
-            return client.infer(request)
+    def infer(self, request):
+        with self._client_lock: client = self._client
+        if client is None: return None
+        try: return client.infer(request)
         except Exception as exc:
-            if self._on_error is not None:
-                self._on_error(f"Infer request failed: {exc}")
-            self._disconnect_event.set()
-            return None
+            if self._on_error: self._on_error(f"Infer request failed: {exc}")
+            self._disconnect_event.set(); return None
 
-    def _run(self) -> None:
+    def _run(self):
         backoff = self._reconnect_interval_sec
         while not self._stop_event.is_set():
             self._disconnect_event.clear()
-
             try:
                 self._logger.info(f"Connecting websocket: {self._host}:{self._port}")
-                client = _websocket_client_policy.WebsocketClientPolicy(
-                    host=self._host,
-                    port=self._port,
-                    api_key=self._api_key,
-                )
-                with self._client_lock:
-                    self._client = client
-
+                client = _websocket_client_policy.WebsocketClientPolicy(host=self._host, port=self._port, api_key=self._api_key)
+                with self._client_lock: self._client = client
                 metadata = client.get_server_metadata()
                 backoff = self._reconnect_interval_sec
-
-                if self._on_connected is not None:
-                    self._on_connected()
-
-                if self._on_metadata is not None:
-                    self._on_metadata(metadata)
-
-                while not self._stop_event.is_set() and not self._disconnect_event.is_set():
-                    time.sleep(0.05)
-
+                if self._on_connected: self._on_connected()
+                if self._on_metadata: self._on_metadata(metadata)
+                while not self._stop_event.is_set() and not self._disconnect_event.is_set(): time.sleep(0.05)
             except Exception as exc:
-                if self._on_error is not None:
-                    self._on_error(f"Websocket connect/loop error: {exc}")
+                if self._on_error: self._on_error(f"Websocket connect/loop error: {exc}")
             finally:
-                with self._client_lock:
-                    self._client = None
-
-                if self._on_disconnected is not None:
-                    self._on_disconnected()
-
+                with self._client_lock: self._client = None
+                if self._on_disconnected: self._on_disconnected()
             if not self._stop_event.is_set():
                 self._logger.warning(f"Websocket disconnected. Reconnecting in {backoff:.2f}s")
                 time.sleep(backoff)
                 backoff = min(backoff * 2.0, self._max_reconnect_interval_sec)
 
+# --- Base Bridge Class ---
 
 class PiWebsocketBridgeBase(Node):
     """Base class handling the 'plumbing' of the bridge."""
@@ -477,33 +442,4 @@ class TracerFrontRightBridge(PiWebsocketBridgeBase):
     def apply_action(self, action):
         msg = Twist(); msg.linear.x, msg.angular.z = action
         self._inferred_cmd_pub.publish(msg)
-
-
-def main(args=None) -> None:
-    rclpy.init(args=args)
-    
-    # Use a parameter to decide which bridge to instantiate
-    # In a real scenario, this could be handled by a launch file or a wrapper node
-    # For now, we'll use a simple mapping.
-    
-    # We need a temporary node to read the robot_config parameter
-    temp_node = rclpy.create_node('temp_config_node')
-    temp_node.declare_parameter("robot_config", "tracer")
-    robot_config = temp_node.get_parameter("robot_config").value
-    temp_node.destroy_node()
-
-    bridge_map = {
-        "tracer": TracerBridge,
-        "tracer_side": TracerSideBridge,
-        "tracer_front_left": TracerFrontLeftBridge,
-        "tracer_front_right": TracerFrontRightBridge,
-    }
-    
-    bridge_class = bridge_map.get(robot_config, TracerBridge)
-    node = bridge_class()
-    
-    try:
-        rclpy.spin(node)
-    finally:
-        node.destroy_node()
-        rclpy.shutdown()
+```
