@@ -1185,6 +1185,42 @@ _CONFIGS = [
         batch_size=32,
         # num_workers=0,
     ),
+    TrainConfig(
+        name="pi0_tracer_side_dinning_to_pantry_finetune",
+        model=pi0_config.Pi0Config(max_token_len=256),
+        data=LeRobotTracerSideDataConfig(
+            repo_id="brad/tracer_data_side_views_dinning_to_pantry",
+            base_config=DataConfig(prompt_from_task=True),
+        ),
+        weight_loader=weight_loaders.CheckpointWeightLoader("gs://openpi-assets/checkpoints/pi0_base/params"),
+        num_train_steps=5_000,
+        batch_size=32,
+        # num_workers=0,
+    ),
+    TrainConfig(
+        name="pi0_tracer_front_right_dinning_to_pantry_finetune",
+        model=pi0_config.Pi0Config(max_token_len=256),
+        data=LeRobotTracerFrontRightDataConfig(
+            repo_id="brad/tracer_data_side_views_dinning_to_pantry",
+            base_config=DataConfig(prompt_from_task=True),
+        ),
+        weight_loader=weight_loaders.CheckpointWeightLoader("gs://openpi-assets/checkpoints/pi0_base/params"),
+        num_train_steps=5_000,
+        batch_size=32,
+        # num_workers=0,
+    ),
+    TrainConfig(
+        name="pi0_tracer_front_left_dinning_to_pantry_finetune",
+        model=pi0_config.Pi0Config(max_token_len=256),
+        data=LeRobotTracerFrontLeftDataConfig(
+            repo_id="brad/tracer_data_side_views_dinning_to_pantry",
+            base_config=DataConfig(prompt_from_task=True),
+        ),
+        weight_loader=weight_loaders.CheckpointWeightLoader("gs://openpi-assets/checkpoints/pi0_base/params"),
+        num_train_steps=5_000,
+        batch_size=32,
+        # num_workers=0,
+    ),
     #
     # ALOHA Sim configs. This config is used to demonstrate how to train on a simple simulated environment.
     #

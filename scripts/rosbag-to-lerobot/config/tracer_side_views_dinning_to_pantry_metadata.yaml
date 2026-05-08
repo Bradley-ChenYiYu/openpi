@@ -1,0 +1,10 @@
+# Optional metadata file for task text and episode-level tags.
+# One bag directory maps to one episode.
+
+default_task: Navigate around the room
+
+episodes:
+  rosbag2_2026_04_30-13_28_32:
+    task: Turn right at the brown wooden wall on your left. Go to the windows at the end of the hallway and turn around. Turn left at the dead-end glass wall with a staircase on the left. Turn right at the clear path ahead and the opening to the right. Move forward through the room, hugging the wall on the right side. Turn right at the room with furniture on the left and an open passageway on the right. Turn left at the wooden counter on the left and the wall of glass doors ahead. Go to the window at the end of the hallway and turn around. Turn right toward the open area next to the brown double doors. Turn right and enter the room when you see an open area with a table to the right. Turn right in front of the table and chair. Move to the left side of the wooden wall and face the wall.
+  rosbag2_2026_04_30-13_37_46:
+    task: Turn right at the brown wooden wall on your left. Go to the windows at the end of the hallway and turn around. Turn left at the dead-end glass wall with a staircase on the left. Turn right at the clear path ahead and the opening to the right. Move forward through the room, hugging the wall on the right side. Turn right at the room with furniture on the left and an open passageway on the right. Turn left at the wooden counter on the left and the wall of glass doors ahead. Go to the window at the end of the hallway and turn around. Turn right toward the open area next to the brown double doors. Turn right and enter the room when you see an open area with a table to the right. Turn right in front of the table and chair. Move to the left side of the wooden wall and face the wall.

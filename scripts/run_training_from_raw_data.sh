@@ -20,10 +20,10 @@ cd "$repo_root"
 START_STEP="${START_STEP:-4}"
 
 # ===== Path Variables =====
-CONFIG_NAME="pi0_tracer_front_right_finetune"
-METADATA_CONFIG="scripts/rosbag-to-lerobot/config/tracer_side_views_metadata.yaml"
-TOPIC_MAPPING_CONFIG="scripts/rosbag-to-lerobot/config/tracer_front_right_views_topic_mapping.yaml"
-ROSBAG_DIR="rosbag_dir/rosbag_dir_20260430"
+CONFIG_NAME="pi0_tracer_side_dinning_to_pantry_finetune"
+METADATA_CONFIG="scripts/rosbag-to-lerobot/config/tracer_side_views_dinning_to_pantry_metadata.yaml"
+TOPIC_MAPPING_CONFIG="scripts/rosbag-to-lerobot/config/tracer_side_views_topic_mapping.yaml"
+ROSBAG_DIR="rosbag_dir/rosbag_dir_20260430_dinning_to_pantry"
 ROSBAG2VIDEO_RATE="50"
 
 # ===== generate_vid_prompt_ollama.py Variables =====
@@ -32,7 +32,7 @@ VID_PROMPT_PARENT_DIR="$ROSBAG_DIR"
 
 # ===== convert_rosbag_to_lerobot.py Variables =====
 CONVERT_INPUT_BAG_PATH="$ROSBAG_DIR"
-CONVERT_REPO_ID="brad/tracer_data_side_views"
+CONVERT_REPO_ID="brad/tracer_data_side_views_dinning_to_pantry"
 CONVERT_ROBOT_TYPE="tracer"
 CONVERT_FPS="50"
 CONVERT_CONFIG_PATH="$TOPIC_MAPPING_CONFIG"
