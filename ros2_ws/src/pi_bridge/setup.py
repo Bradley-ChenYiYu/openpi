@@ -26,6 +26,10 @@ setup(
     },
     entry_points={
         'console_scripts': [
+            'tracer_bridge = pi_bridge.tracer_bridge:main',
+            'tracer_side_bridge = pi_bridge.tracer_side_bridge:main',
+            'tracer_front_left_bridge = pi_bridge.tracer_front_left_bridge:main',
+            'tracer_front_right_bridge = pi_bridge.tracer_front_right_bridge:main',
             'websocket_bridge = pi_bridge.websocket_bridge_node:main',
             'random_test_publisher = pi_bridge.random_test_publisher:main',
         ],

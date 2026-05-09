@@ -15,19 +15,13 @@ import rclpy
 from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry
 from rclpy.node import Node
-from rclpy.qos import DurabilityPolicy
-from rclpy.qos import HistoryPolicy
-from rclpy.qos import QoSProfile
-from rclpy.qos import ReliabilityPolicy
-from sensor_msgs.msg import CompressedImage
-from sensor_msgs.msg import Image
+from rclpy.qos import DurabilityPolicy, HistoryPolicy, QoSProfile, ReliabilityPolicy
+from sensor_msgs.msg import CompressedImage, Image
 from std_msgs.msg import String
-
 
 def _import_openpi_client_policy():
     try:
         from openpi_client import websocket_client_policy as client_policy
-
         return client_policy
     except ModuleNotFoundError:
         candidate_roots = [
@@ -44,13 +38,10 @@ def _import_openpi_client_policy():
                 if candidate_str not in sys.path:
                     sys.path.append(candidate_str)
                 from openpi_client import websocket_client_policy as client_policy
-
                 return client_policy
         raise
 
-
 _websocket_client_policy = _import_openpi_client_policy()
-
 
 @dataclass
 class BufferedImage:
@@ -58,13 +49,11 @@ class BufferedImage:
     frame_id: str
     image_array: np.ndarray
 
-
 @dataclass
 class BufferedOdometry:
     stamp_ns: int
     linear_x: float
     angular_z: float
-
 
 class WebsocketClientManager:
     def __init__(
@@ -176,7 +165,6 @@ class WebsocketClientManager:
                 time.sleep(backoff)
                 backoff = min(backoff * 2.0, self._max_reconnect_interval_sec)
 
-
 class PiWebsocketBridgeBase(Node):
     """Base class handling the 'plumbing' of the bridge."""
     def __init__(self) -> None:
@@ -254,7 +242,6 @@ class PiWebsocketBridgeBase(Node):
         self._parse_failures += 1
         self.get_logger().error(message)
 
-    # --- Abstract Methods to be implemented by Robot Classes ---
     def setup_robot_config(self): raise NotImplementedError
     def setup_subscriptions(self): raise NotImplementedError
     def setup_publishers(self): raise NotImplementedError
@@ -262,7 +249,6 @@ class PiWebsocketBridgeBase(Node):
     def prepare_observation_state(self, odom: BufferedOdometry) -> np.ndarray: raise NotImplementedError
     def apply_action(self, action: Tuple[float, float]): raise NotImplementedError
 
-    # --- General Utilities ---
     def _on_odom(self, msg: Odometry):
         stamp_ns = self._stamp_to_ns(msg.header.stamp)
         with self._lock:
@@ -294,7 +280,6 @@ class PiWebsocketBridgeBase(Node):
         required = self.get_required_observations()
         if odom is None or any(k not in images for k in required): return
 
-        # Sync check
         for k in required:
             if abs(images[k].stamp_ns - odom.stamp_ns) / 1e9 > self._sync_tolerance_sec:
                 self._dropped_frames += 1; return
@@ -368,142 +353,3 @@ class PiWebsocketBridgeBase(Node):
         self._manager.stop()
         self._infer_executor.shutdown(wait=False, cancel_futures=True)
         return super().destroy_node()
-
-# --- Robot Specific Implementations ---
-
-class TracerBridge(PiWebsocketBridgeBase):
-    def setup_robot_config(self):
-        self.declare_parameter("image_topic", "/camera/camera/color/image_raw")
-        self.declare_parameter("odom_topic", "/odom")
-        self.declare_parameter("inferred_cmd_topic", "/pi_bridge/inferred_cmd_vel")
-
-    def get_required_observations(self):
-        return {"observation/image": "image_topic"}
-
-    def setup_subscriptions(self):
-        self.create_subscription(Odometry, self.get_parameter("odom_topic").value, self._on_odom, self._queue_size)
-        self.create_subscription(Image, self.get_parameter("image_topic").value, lambda m: self._on_image(m, "observation/image"), self._queue_size)
-
-    def setup_publishers(self):
-        self._inferred_cmd_pub = self.create_publisher(Twist, self.get_parameter("inferred_cmd_topic").value, QoSProfile(history=HistoryPolicy.KEEP_ALL, depth=1, reliability=ReliabilityPolicy.RELIABLE))
-        self._ack_pub = self.create_publisher(String, "/pi_bridge/control_ack", self._queue_size)
-
-    def prepare_observation_state(self, odom):
-        return np.asarray([odom.linear_x, odom.angular_z], dtype=np.float32)
-
-    def apply_action(self, action):
-        msg = Twist(); msg.linear.x, msg.angular.z = action
-        self._inferred_cmd_pub.publish(msg)
-
-class TracerSideBridge(PiWebsocketBridgeBase):
-    def setup_robot_config(self):
-        self.declare_parameter("front_image_topic", "/camera/front/color/image_raw")
-        self.declare_parameter("left_image_topic", "/camera/left/color/image_raw")
-        self.declare_parameter("right_image_topic", "/camera/right/color/image_raw")
-        self.declare_parameter("odom_topic", "/odom")
-        self.declare_parameter("inferred_cmd_topic", "/pi_bridge/inferred_cmd_vel")
-
-    def get_required_observations(self):
-        return {
-            "observation/front_image": "front_image_topic",
-            "observation/left_image": "left_image_topic",
-            "observation/right_image": "right_image_topic",
-        }
-
-    def setup_subscriptions(self):
-        self.create_subscription(Odometry, self.get_parameter("odom_topic").value, self._on_odom, self._queue_size)
-        for key, param in self.get_required_observations().items():
-            self.create_subscription(Image, self.get_parameter(param).value, lambda m, k=key: self._on_image(m, k), self._queue_size)
-
-    def setup_publishers(self):
-        self._inferred_cmd_pub = self.create_publisher(Twist, self.get_parameter("inferred_cmd_topic").value, QoSProfile(history=HistoryPolicy.KEEP_ALL, depth=1, reliability=ReliabilityPolicy.RELIABLE))
-        self._ack_pub = self.create_publisher(String, "/pi_bridge/control_ack", self._queue_size)
-
-    def prepare_observation_state(self, odom):
-        return np.asarray([odom.linear_x, odom.angular_z], dtype=np.float32)
-
-    def apply_action(self, action):
-        msg = Twist(); msg.linear.x, msg.angular.z = action
-        self._inferred_cmd_pub.publish(msg)
-
-class TracerFrontLeftBridge(PiWebsocketBridgeBase):
-    def setup_robot_config(self):
-        self.declare_parameter("front_image_topic", "/camera/front/color/image_raw")
-        self.declare_parameter("left_image_topic", "/camera/left/color/image_raw")
-        self.declare_parameter("odom_topic", "/odom")
-        self.declare_parameter("inferred_cmd_topic", "/pi_bridge/inferred_cmd_vel")
-
-    def get_required_observations(self):
-        return {"observation/front_image": "front_image_topic", "observation/left_image": "left_image_topic"}
-
-    def setup_subscriptions(self):
-        self.create_subscription(Odometry, self.get_parameter("odom_topic").value, self._on_odom, self._queue_size)
-        for key, param in self.get_required_observations().items():
-            self.create_subscription(Image, self.get_parameter(param).value, lambda m, k=key: self._on_image(m, k), self._queue_size)
-
-    def setup_publishers(self):
-        self._inferred_cmd_pub = self.create_publisher(Twist, self.get_parameter("inferred_cmd_topic").value, QoSProfile(history=HistoryPolicy.KEEP_ALL, depth=1, reliability=ReliabilityPolicy.RELIABLE))
-        self._ack_pub = self.create_publisher(String, "/pi_bridge/control_ack", self._queue_size)
-
-    def prepare_observation_state(self, odom):
-        return np.asarray([odom.linear_x, odom.angular_z], dtype=np.float32)
-
-    def apply_action(self, action):
-        msg = Twist(); msg.linear.x, msg.angular.z = action
-        self._inferred_cmd_pub.publish(msg)
-
-class TracerFrontRightBridge(PiWebsocketBridgeBase):
-    def setup_robot_config(self):
-        self.declare_parameter("front_image_topic", "/camera/front/color/image_raw")
-        self.declare_parameter("right_image_topic", "/camera/right/color/image_raw")
-        self.declare_parameter("odom_topic", "/odom")
-        self.declare_parameter("inferred_cmd_topic", "/pi_bridge/inferred_cmd_vel")
-
-    def get_required_observations(self):
-        return {"observation/front_image": "front_image_topic", "observation/right_image": "right_image_topic"}
-
-    def setup_subscriptions(self):
-        self.create_subscription(Odometry, self.get_parameter("odom_topic").value, self._on_odom, self._queue_size)
-        for key, param in self.get_required_observations().items():
-            self.create_subscription(Image, self.get_parameter(param).value, lambda m, k=key: self._on_image(m, k), self._queue_size)
-
-    def setup_publishers(self):
-        self._inferred_cmd_pub = self.create_publisher(Twist, self.get_parameter("inferred_cmd_topic").value, QoSProfile(history=HistoryPolicy.KEEP_ALL, depth=1, reliability=ReliabilityPolicy.RELIABLE))
-        self._ack_pub = self.create_publisher(String, "/pi_bridge/control_ack", self._queue_size)
-
-    def prepare_observation_state(self, odom):
-        return np.asarray([odom.linear_x, odom.angular_z], dtype=np.float32)
-
-    def apply_action(self, action):
-        msg = Twist(); msg.linear.x, msg.angular.z = action
-        self._inferred_cmd_pub.publish(msg)
-
-
-def main(args=None) -> None:
-    rclpy.init(args=args)
-    
-    # Use a parameter to decide which bridge to instantiate
-    # In a real scenario, this could be handled by a launch file or a wrapper node
-    # For now, we'll use a simple mapping.
-    
-    # We need a temporary node to read the robot_config parameter
-    temp_node = rclpy.create_node('temp_config_node')
-    temp_node.declare_parameter("robot_config", "tracer")
-    robot_config = temp_node.get_parameter("robot_config").value
-    temp_node.destroy_node()
-
-    bridge_map = {
-        "tracer": TracerBridge,
-        "tracer_side": TracerSideBridge,
-        "tracer_front_left": TracerFrontLeftBridge,
-        "tracer_front_right": TracerFrontRightBridge,
-    }
-    
-    bridge_class = bridge_map.get(robot_config, TracerBridge)
-    node = bridge_class()
-    
-    try:
-        rclpy.spin(node)
-    finally:
-        node.destroy_node()
-        rclpy.shutdown()
