@@ -5,36 +5,32 @@ default_task: Navigate around the room
 
 episodes:
   rosbag2_2026_04_30-14_03_56:
-    task: Move forward past the black table with wooden chairs and cardboard boxes, then proceed slightly to the right past the table with robotic arms and the black-clothed table. Continue along the wooden wall, passing the robotic arm cart, and stop once you reach the white wall opening.
+    task: Back up and turn right, then go to the table with brown cups.
   rosbag2_2026_04_30-14_06_04:
-    task: Turn left from the workstation and wooden wall, moving forward past the cardboard boxes. Continue forward and slightly left, passing the table with wooden chairs and glass doors with black frames, then proceed past the black cloth-covered table. Keep moving forward through the open office area past the glass-walled offices and high tables until you arrive at the dining area with black tables and wooden partition walls.
+    task: Back up and turn around, then go to the table with a black cloth.
   rosbag2_2026_04_30-14_08_32:
-    task: Move forward and slightly right from the wooden folding chairs and black table, passing the wood-paneled walls and large cardboard boxes. Then, move right past the wooden partition wall and the person in the red shirt, continuing forward and slightly left past the cardboard boxes and the table with red cups. From there, proceed forward and slightly right past the white-topped table and brown cardboard boxes, and finally move past the wooden partition wall until you reach the black equipment table.
+    task: Back up and turn right, then go to the table with red cups.
   rosbag2_2026_04_30-14_09_22:
-    task: Move forward through the open office space past the wooden sliding wall and the tables with black cloths, continuing past the glass wall and glass doors. Then, proceed through the area with wooden folding chairs and tables until you reach the wooden partition wall.
-  rosbag2_2026_04_30-14_10_09:
-    task: Move forward from the area with wooden chairs and folding partitions, veering right past the large cardboard boxes. Continue past the grey wall with light switches and the table with the red cup, then proceed past the red bucket and black tables. Follow the path along the glass partitions and glass-walled offices, finally stopping in front of the black-framed glass door.
+    task: Back up and turn right, then go to the table with a black cloth.
   rosbag2_2026_04_30-14_11_16:
-    task: Move forward from the glass wall with the black frame, continuing along the corridor past the white table and the large grid window. Then, pass through the glass door with the silver handle and proceed past the glass-walled office area and the workstation with the black cloth-covered table and robotic arms. Finally, move past the high table with wooden chairs and the wooden partition wall, coming to a stop at the black table with wooden chairs by the brown partition wall.
+    task: Back up and turn right, then go to the table with a black cloth.
   rosbag2_2026_04_30-14_12_15:
-    task: Move forward past the black table with wooden chairs and cardboard boxes, then turn right and proceed past the table with the black cloth and black equipment case. After adjusting your position, move right along the wooden partition wall and brown floor mat, then continue forward through the narrow space between the cardboard boxes and the wood-paneled wall, passing through the corridor by the wooden door. Turn left past the white table with the pitcher, and finally, move forward and slightly left along the black-framed glass wall until you stop in front of the wooden chair and black table.
+    task: Back up and turn right, then go to the table with a sandwich.
   rosbag2_2026_04_30-14_13_11:
-    task: Move forward through the open office past the glass walls and wooden folding chairs, continuing through the dining area and lab space past the glass partitions with robotic arms. Then, proceed past the black tables and black-framed glass doors, and stop once you reach the black table with wooden chairs and the large cardboard box near the brown partition wall.
+    task: Back up and turn left, then go to the table with a black cloth.
   rosbag2_2026_04_30-14_19_05:
-    task: Move forward and slightly right from the black table with wooden chairs, continuing past the cardboard boxes until you reach the black cloth-covered table with robotic arms by the wooden wall.
+    task: Back up and turn right, then go to the table with brown cups.
   rosbag2_2026_04_30-14_19_40:
-    task: Move forward and slightly right along the wooden partition wall, then turn left past the cardboard boxes and marble-top table. Continue slightly left through the seating area with wooden folding chairs and past the black cloth-covered table and glass doors, then veer slightly right into the open office lounge area and stop at the tables and wooden chairs near the wooden-paneled wall.
+    task: Back up and turn left, then go to the table with a black cloth.
   rosbag2_2026_04_30-14_20_18:
-    task: Move forward from the area with wooden folding chairs and black-legged tables, passing the table with the black cloth and cardboard boxes. Continue past the table with red cups and cardboard boxes, then proceed until you reach the black table with the blue light and robotic arms next to the wooden partition wall.
+    task: Back up and turn right, then go to the table with red cups.
   rosbag2_2026_04_30-14_21_03:
-    task: Move forward and slightly right past the black cloth-covered table and glass partition, then continue past the white folding chair and robotic arms. Proceed forward and slightly right past the glass wall and wood-paneled wall, finally coming to a stop in the room with the high tables, wooden chairs, and the grey partition wall.
-  rosbag2_2026_04_30-14_21_41:
-    task: Move forward and turn right past the cardboard boxes and table with black cloth, then proceed forward and slightly left past the table with red cups and wooden chairs. Continue straight through the area with wooden folding chairs and black tables, then move forward and slightly right past the robotic arms. Finally, follow the glass-walled office partitions to the right and stop in front of the black-framed glass door leading into the white room.
+    task: Back up and turn right, then go to the table with a black cloth.
   rosbag2_2026_04_30-14_23_55:
-    task: Move forward and slightly right along the glass wall and partition, passing the white table and wooden-paneled wall. Then, proceed through the doorway between the wooden wall and glass partition, moving left past the row of grey chairs and the black table with the white cup. Continue left past the black cloth-covered table and through the glass doors, then move forward and right past the wooden tables and chairs until you reach the large cardboard box.
+    task: Back up and turn right, then go to the table with a black cloth.
   rosbag2_2026_04_30-14_24_55:
-    task: Move forward past the black table with wooden chairs and cardboard boxes, then continue past the technical workstation with robotic arms and the wooden paneled walls. Proceed past the grey pillar with light switches and the table with the red cup and white pitcher, continuing through the area with wooden folding chairs and black tables with red buckets. Then, pass the water dispenser and the glass partition with robotic arms, and move right along the glass-walled offices until you reach the glass door with the black frame.
+    task: Back up and turn right, then go to the table with a white jug.
   rosbag2_2026_04_30-14_26_29:
-    task: Move forward and veer right through the room, passing the wooden tables, chairs, and cardboard boxes toward the wood-paneled wall. Continue forward and to the right past the black-clothed table and equipment case, then steer slightly left past the robotic arms. Proceed along the wooden wall and brown floor mat, passing the cardboard boxes and continuing through the narrow corridor by the wooden cabinet. Finally, move toward the black-framed glass wall and white table, stopping once you are facing the glass partition.
+    task: Back up and turn right, then go to the table with a sandwich.
   rosbag2_2026_04_30-14_27_22:
-    task: Move forward through the office area past the wooden folding chairs and black tables, then continue slightly to the right past the glass-walled rooms and the wooden-paneled wall, and stop once you reach the large cardboard box located by the black table.
+    task: Back up and turn left, then go to the table with a black cloth.
