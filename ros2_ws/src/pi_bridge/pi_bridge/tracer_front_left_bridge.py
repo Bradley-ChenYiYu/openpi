@@ -1,7 +1,6 @@
 import rclpy
 import numpy as np
 from geometry_msgs.msg import Twist
-from nav_msgs.msg import Twist # Wait, should be Odometry
 from nav_msgs.msg import Odometry
 from sensor_msgs.msg import Image
 from std_msgs.msg import String

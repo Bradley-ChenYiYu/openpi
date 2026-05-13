@@ -181,6 +181,8 @@ class PiWebsocketBridgeBase(Node):
         self.declare_parameter("sync_tolerance_sec", 0.25)
         self.declare_parameter("prompt", "do something")
         self.declare_parameter("action_rate_hz", 20.0)
+        self.declare_parameter("diagnostics_topic", "/pi_bridge/diagnostics")
+        self.declare_parameter("ack_topic", "/pi_bridge/control_ack")
 
         # Initialize common state
         self._websocket_host = str(self.get_parameter("websocket_host").value)
@@ -192,6 +194,8 @@ class PiWebsocketBridgeBase(Node):
         self._sync_tolerance_sec = float(self.get_parameter("sync_tolerance_sec").value)
         self._prompt = self.get_parameter("prompt").value
         self._action_rate_hz = float(self.get_parameter("action_rate_hz").value)
+        diagnostics_topic = self.get_parameter("diagnostics_topic").value
+        ack_topic = self.get_parameter("ack_topic").value
 
         self._latest_images: Dict[str, BufferedImage] = {}
         self._latest_odom: BufferedOdometry | None = None
@@ -237,6 +241,9 @@ class PiWebsocketBridgeBase(Node):
         self.create_timer(1.0 / max(self._send_rate_hz, 1e-3), self._on_send_timer)
         self.create_timer(1.0 / max(self._action_rate_hz, 1e-3), self._on_cmd_timer)
         self.create_timer(1.0, self._publish_diagnostics)
+
+        self._diag_pub = self.create_publisher(String, diagnostics_topic, self._queue_size)
+        self._ack_pub = self.create_publisher(String, ack_topic, self._queue_size)
 
     def _on_ws_error(self, message: str):
         self._parse_failures += 1
