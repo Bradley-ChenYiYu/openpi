@@ -2,7 +2,7 @@
 
 # --- Configuration ---
 HOST="140.116.154.4"
-PORT_SOURCE=30707
+PORT_SOURCE=30375
 PORT_SINK=30501
 LOCAL_PORT=11434
 KEY_SOURCE="$HOME/.ssh/ollama_id_ed25519"
@@ -98,7 +98,7 @@ if ! ps -p $PID1 > /dev/null || ! ps -p $PID2 > /dev/null; then
 fi
 
 echo "------------------------------------------------"
-echo "BRIDGE ACTIVE: [Container:30707] <-> [Local] <-> [Container:30501]"
+echo "BRIDGE ACTIVE: [Container:$PORT_SOURCE] <-> [Local] <-> [Container:$PORT_SINK]"
 echo "Press Ctrl+C to stop."
 echo "------------------------------------------------"
 
