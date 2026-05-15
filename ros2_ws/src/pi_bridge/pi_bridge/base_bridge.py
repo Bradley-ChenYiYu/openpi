@@ -16,6 +16,7 @@ from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry
 from rclpy.node import Node
 from rclpy.qos import DurabilityPolicy, HistoryPolicy, QoSProfile, ReliabilityPolicy
+from rcl_interfaces.msg import SetParametersResult
 from sensor_msgs.msg import CompressedImage, Image
 from std_msgs.msg import String
 
@@ -180,6 +181,7 @@ class PiWebsocketBridgeBase(Node):
         self.declare_parameter("max_reconnect_interval_sec", 8.0)
         self.declare_parameter("sync_tolerance_sec", 0.25)
         self.declare_parameter("prompt", "do something")
+        self.add_on_set_parameters_callback(self._on_prompt_param_change)
         self.declare_parameter("action_rate_hz", 20.0)
         self.declare_parameter("diagnostics_topic", "/pi_bridge/diagnostics")
         self.declare_parameter("ack_topic", "/pi_bridge/control_ack")
@@ -360,3 +362,10 @@ class PiWebsocketBridgeBase(Node):
         self._manager.stop()
         self._infer_executor.shutdown(wait=False, cancel_futures=True)
         return super().destroy_node()
+
+    def _on_prompt_param_change(self, params):
+        for param in params:
+            if param.name == "prompt":
+                self._prompt = param.value
+                self.get_logger().info(f"Prompt updated to: {self._prompt}")
+        return SetParametersResult(successful=True)
