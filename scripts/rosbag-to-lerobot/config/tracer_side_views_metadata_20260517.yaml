@@ -1,0 +1,70 @@
+# Optional metadata file for task text and episode-level tags.
+# One bag directory maps to one episode.
+
+default_task: Navigate around the room
+
+episodes:
+  rosbag2_2026_05_17-14_30_07:
+    task: Back up and turn right, then go to the table with brown cups.
+  rosbag2_2026_05_17-14_31_33:
+    task: Back up and turn around, then go to the table with a black cloth.
+  rosbag2_2026_05_17-14_32_30:
+    task: Back up and turn right, then go to the table with red cups.
+  rosbag2_2026_05_17-14_33_34:
+    task: Back up and turn right, then go to the table with a black cloth.
+  rosbag2_2026_05_17-14_34_44:
+    task: Back up and turn right, then go to the table with a sandwich.
+  rosbag2_2026_05_17-14_36_33:
+    task: Back up and turn left, then go to the table with a black cloth.
+  rosbag2_2026_05_17-14_38_05:
+    task: Back up and turn right, then go to the table with a white jug.
+  rosbag2_2026_05_17-14_40_11:
+    task: Back up and turn right, then go to the table with a black cloth.
+  rosbag2_2026_05_17-14_44_38:
+    task: Back up and turn right, then go to the table with a sandwich.
+  rosbag2_2026_05_17-14_45_22:
+    task: Back up and turn around, then go to the table with a black cloth.
+  rosbag2_2026_05_17-14_46_19:
+    task: Back up and turn right, then go to the table with brown cups.
+  rosbag2_2026_05_17-14_47_22:
+    task: Back up and turn right, then go to the table with a black cloth.
+  rosbag2_2026_05_17-14_48_27:
+    task: Back up and turn right, then go to the table with a white jug.
+  rosbag2_2026_05_17-14_50_05:
+    task: Back up and turn left, then go to the table with a black cloth.
+  rosbag2_2026_05_17-14_51_37:
+    task: Back up and turn right, then go to the table with red cups.
+  rosbag2_2026_05_17-14_53_43:
+    task: Back up and turn right, then go to the table with a black cloth.
+  rosbag2_2026_05_17-14_57_18:
+    task: Back up and turn right, then go to the table with a white jug.
+  rosbag2_2026_05_17-14_58_00: 
+    task: Back up and turn around, then go to the table with a black cloth.
+  rosbag2_2026_05_17-14_58_57:
+    task: Back up and turn right, then go to the table with a sandwich.
+  rosbag2_2026_05_17-15_00_14:
+    task: Back up and turn right, then go to the table with a black cloth.
+  rosbag2_2026_05_17-15_01_23:
+    task: Back up and turn right, then go to the table with red cups.
+  rosbag2_2026_05_17-15_02_59:
+    task: Back up and turn left, then go to the table with a black cloth.
+  rosbag2_2026_05_17-15_04_28:
+    task: Back up and turn right, then go to the table with brown cups.
+  rosbag2_2026_05_17-15_06_25:
+    task: Back up and turn right, then go to the table with a black cloth.
+  rosbag2_2026_05_17-16_16_22:
+    task: Back up and turn right, then go to the table with red cups.
+  rosbag2_2026_05_17-16_17_05:
+    task: Back up and turn around, then go to the table with a black cloth.
+  rosbag2_2026_05_17-16_18_01:
+    task: Back up and turn right, then go to the table with a white jug.
+  rosbag2_2026_05_17-16_19_03:
+    task: Back up and turn right, then go to the table with a black cloth.
+  rosbag2_2026_05_17-16_20_06:
+    task: Back up and turn right, then go to the table with brown cups.
+  rosbag2_2026_05_17-16_21_45:
+    task: Back up and turn left, then go to the table with a black cloth.
+  rosbag2_2026_05_17-16_24_12:
+    task: Back up and turn right, then go to the table with a sandwich.
+  rosbag2_2026_05_17-16_26_29:
+    task: Back up and turn right, then go to the table with a black cloth.

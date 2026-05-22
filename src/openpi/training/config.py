@@ -1153,7 +1153,7 @@ _CONFIGS = [
         name="pi0_tracer_side_finetune",
         model=pi0_config.Pi0Config(),
         data=LeRobotTracerSideDataConfig(
-            repo_id="brad/tracer_data_side_views",
+            repo_id="brad/tracer_data_side_views_20260517",
             base_config=DataConfig(prompt_from_task=True),
         ),
         weight_loader=weight_loaders.CheckpointWeightLoader("gs://openpi-assets/checkpoints/pi0_base/params"),
@@ -1165,7 +1165,7 @@ _CONFIGS = [
         name="pi0_tracer_front_finetune",
         model=pi0_config.Pi0Config(),
         data=LeRobotTracerDataConfig(
-            repo_id="brad/tracer_data_side_views",
+            repo_id="brad/tracer_data_side_views_20260517",
             base_config=DataConfig(prompt_from_task=True),
         ),
         weight_loader=weight_loaders.CheckpointWeightLoader("gs://openpi-assets/checkpoints/pi0_base/params"),
@@ -1178,7 +1178,7 @@ _CONFIGS = [
         name="pi0_tracer_front_left_finetune",
         model=pi0_config.Pi0Config(),
         data=LeRobotTracerFrontLeftDataConfig(
-            repo_id="brad/tracer_data_side_views",
+            repo_id="brad/tracer_data_side_views_20260517",
             base_config=DataConfig(prompt_from_task=True),
         ),
         weight_loader=weight_loaders.CheckpointWeightLoader("gs://openpi-assets/checkpoints/pi0_base/params"),
@@ -1190,7 +1190,7 @@ _CONFIGS = [
         name="pi0_tracer_front_right_finetune",
         model=pi0_config.Pi0Config(),
         data=LeRobotTracerFrontRightDataConfig(
-            repo_id="brad/tracer_data_side_views",
+            repo_id="brad/tracer_data_side_views_20260517",
             base_config=DataConfig(prompt_from_task=True),
         ),
         weight_loader=weight_loaders.CheckpointWeightLoader("gs://openpi-assets/checkpoints/pi0_base/params"),
