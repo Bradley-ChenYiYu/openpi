@@ -23,18 +23,20 @@ START_STEP="${START_STEP:-3}"
 CONFIG_NAME="pi0_tracer_side_finetune"
 METADATA_CONFIG="scripts/rosbag-to-lerobot/config/tracer_side_views_metadata_20260517.yaml"
 TOPIC_MAPPING_CONFIG="scripts/rosbag-to-lerobot/config/tracer_side_views_topic_mapping.yaml"
-ROSBAG_DIR="rosbag_dir/rosbag_dir_20260517 \
-    rosbag_dir/rosbag_dir_20260517_2 \
-    rosbag_dir/rosbag_dir_20260517_3 \
-    rosbag_dir/rosbag_dir_20260517_4"
+ROSBAG_DIRS=(
+    "rosbag_dir/rosbag_dir_20260517"
+    "rosbag_dir/rosbag_dir_20260517_2"
+    "rosbag_dir/rosbag_dir_20260517_3"
+    "rosbag_dir/rosbag_dir_20260517_4"
+)
 ROSBAG2VIDEO_RATE="50"
 
 # ===== generate_vid_prompt_ollama.py Variables =====
 VID_PROMPT_METADATA_PATH="$METADATA_CONFIG"
-VID_PROMPT_PARENT_DIR="$ROSBAG_DIR"
+# VID_PROMPT_PARENT_DIR="$ROSBAG_DIR"
 
 # ===== convert_rosbag_to_lerobot.py Variables =====
-CONVERT_INPUT_BAG_PATH="$ROSBAG_DIR"
+CONVERT_INPUT_BAG_PATHS=("${ROSBAG_DIRS[@]}")
 CONVERT_REPO_ID="brad/tracer_data_side_views_20260517"
 CONVERT_ROBOT_TYPE="tracer"
 CONVERT_FPS="50"
@@ -97,7 +99,7 @@ fi
 if [[ $START_STEP -le 3 ]]; then
     echo "Step 3/5: Converting rosbag to LeRobot format..."
     uv run scripts/rosbag-to-lerobot/convert_rosbag_to_lerobot.py \
-        --input-bag-path "$CONVERT_INPUT_BAG_PATH" \
+        --input-bag-path "$CONVERT_INPUT_BAG_PATHS" \
         --repo-id "$CONVERT_REPO_ID" \
         --robot-type "$CONVERT_ROBOT_TYPE" \
         --fps "$CONVERT_FPS" \
