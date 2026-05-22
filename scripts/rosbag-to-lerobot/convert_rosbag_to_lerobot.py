@@ -755,7 +755,7 @@ def create_dataset(
 
 
 def convert_bags(
-    input_bag_path: Path,
+    input_bag_paths: list[Path],
     repo_id: str,
     robot_type: str,
     fps: int,
@@ -776,12 +776,17 @@ def convert_bags(
     metadata_root = load_metadata(metadata_path)
     dataset_path = HF_LEROBOT_HOME / repo_id
 
-    bag_dirs = list_bag_dirs(input_bag_path)
+    # Accept multiple input paths and aggregate any bag directories found under them.
+    bag_dirs: list[Path] = []
+    for p in input_bag_paths:
+        found = list_bag_dirs(p)
+        bag_dirs.extend(found)
+
     if not bag_dirs:
-        raise ValueError(f"No bag directories to convert under {input_bag_path}")
+        raise ValueError(f"No bag directories to convert under {input_bag_paths}")
 
     logger.info("Starting conversion")
-    logger.info("  input path: %s", input_bag_path)
+    logger.info("  input paths: %s", ", ".join(str(p) for p in input_bag_paths))
     logger.info("  discovered bag directories: %s", len(bag_dirs))
     logger.info("  output dataset path: %s", dataset_path)
     logger.info("  sync reference stream: %s", config.sync.reference_stream)
@@ -923,8 +928,12 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--input-bag-path",
         required=True,
+        nargs="+",
         type=Path,
-        help="Bag directory containing metadata.yaml or a parent directory containing bag directories.",
+        help=(
+            "One or more paths: each may be a bag directory containing metadata.yaml "
+            "or a parent directory containing bag directories."
+        ),
     )
     parser.add_argument("--repo-id", required=True, help="Target LeRobot repo id, e.g. org/dataset")
     parser.add_argument("--robot-type", required=True, help="LeRobot robot type string")
@@ -985,7 +994,7 @@ def main() -> None:
         logger.info("  %s: %s", arg, value)
     
     convert_bags(
-        input_bag_path=args.input_bag_path,
+        input_bag_paths=args.input_bag_path,
         repo_id=args.repo_id,
         robot_type=args.robot_type,
         fps=args.fps,
