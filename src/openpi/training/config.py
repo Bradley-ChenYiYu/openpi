@@ -1169,7 +1169,7 @@ _CONFIGS = [
             base_config=DataConfig(prompt_from_task=True),
         ),
         weight_loader=weight_loaders.CheckpointWeightLoader("gs://openpi-assets/checkpoints/pi0_base/params"),
-        num_train_steps=4_001,
+        num_train_steps=5_001,
         batch_size=32,
         save_interval = 1000,
         keep_period = 1000,
