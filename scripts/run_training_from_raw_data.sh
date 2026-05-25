@@ -17,10 +17,10 @@ cd "$repo_root"
 # ===== Pipeline Step Configuration =====
 # Available steps: 1=rosbag2video, 2=generate_vid_prompt_ollama, 3=convert_rosbag, 4=compute_stats, 5=wandb_login_and_train
 # Example: START_STEP=5 to skip to wandb login and training
-START_STEP="${START_STEP:-3}"
+START_STEP="${START_STEP:-4}"
 
 # ===== Path Variables =====
-CONFIG_NAME="pi0_tracer_front_finetune"
+CONFIG_NAME="pi0_tracer_front_lora"
 METADATA_CONFIG="scripts/rosbag-to-lerobot/config/tracer_side_views_metadata_20260517.yaml"
 TOPIC_MAPPING_CONFIG="scripts/rosbag-to-lerobot/config/tracer_side_views_topic_mapping.yaml"
 ROSBAG_DIRS="rosbag_dir/rosbag_dir_20260517"
@@ -50,7 +50,7 @@ COMPUTE_NORM_CONFIG_NAME="$CONFIG_NAME"
 
 # ===== train.py Variables =====
 TRAIN_CONFIG_NAME="$CONFIG_NAME"
-TRAIN_EXP_NAME="front_cam_dinning_data20260517-1_$(date +%Y%m%d_%H%M%S)"
+TRAIN_EXP_NAME="front_cam_lora_dinning_data20260517-1_$(date +%Y%m%d_%H%M%S)"
 TRAIN_OVERWRITE_FLAG="--overwrite"
 TRAIN_XLA_MEM_FRACTION="0.9"
 TRAIN_OUTPUT_LOG="train_output_${TRAIN_EXP_NAME}.log"

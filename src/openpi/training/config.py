@@ -1165,10 +1165,27 @@ _CONFIGS = [
         name="pi0_tracer_front_finetune",
         model=pi0_config.Pi0Config(),
         data=LeRobotTracerDataConfig(
-            repo_id="brad/tracer_data_side_views_20260517",
+            repo_id="brad/tracer_data_side_views_20260517-1",
             base_config=DataConfig(prompt_from_task=True),
         ),
         weight_loader=weight_loaders.CheckpointWeightLoader("gs://openpi-assets/checkpoints/pi0_base/params"),
+        num_train_steps=5_001,
+        batch_size=32,
+        save_interval = 1000,
+        keep_period = 1000,
+    ),
+    TrainConfig(
+        name="pi0_tracer_front_lora",
+        model=pi0_config.Pi0Config(paligemma_variant="gemma_2b_lora", action_expert_variant="gemma_300m_lora"),
+        data=LeRobotTracerDataConfig(
+            repo_id="brad/tracer_data_side_views_20260517-1",
+            base_config=DataConfig(prompt_from_task=True),
+        ),
+        weight_loader=weight_loaders.CheckpointWeightLoader("gs://openpi-assets/checkpoints/pi0_base/params"),
+        freeze_filter=pi0_config.Pi0Config(
+            paligemma_variant="gemma_2b_lora", action_expert_variant="gemma_300m_lora"
+        ).get_freeze_filter(),
+        ema_decay=None,
         num_train_steps=5_001,
         batch_size=32,
         save_interval = 1000,
