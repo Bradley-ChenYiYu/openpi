@@ -287,7 +287,15 @@ class PiWebsocketBridgeBase(Node):
             images, odom = self._latest_images, self._latest_odom
         
         required = self.get_required_observations()
-        if odom is None or any(k not in images for k in required): return
+        missing = [k for k in required if k not in images]
+        if odom is None or missing:
+            if odom is None and missing:
+                self.get_logger().warning(f"Missing observations: odom, {missing}")
+            elif odom is None:
+                self.get_logger().warning("Missing observations: odom")
+            else:
+                self.get_logger().warning(f"Missing observations: {missing}")
+            return
 
         for k in required:
             if abs(images[k].stamp_ns - odom.stamp_ns) / 1e9 > self._sync_tolerance_sec:
