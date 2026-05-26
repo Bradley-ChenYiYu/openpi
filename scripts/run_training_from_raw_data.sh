@@ -20,19 +20,25 @@ cd "$repo_root"
 START_STEP="${START_STEP:-4}"
 
 # ===== Path Variables =====
-CONFIG_NAME="pi0_tracer_front_finetune"
-METADATA_CONFIG="scripts/rosbag-to-lerobot/config/tracer_side_views_metadata.yaml"
+CONFIG_NAME="pi0_tracer_front_lora"
+METADATA_CONFIG="scripts/rosbag-to-lerobot/config/tracer_side_views_metadata_20260517.yaml"
 TOPIC_MAPPING_CONFIG="scripts/rosbag-to-lerobot/config/tracer_side_views_topic_mapping.yaml"
-ROSBAG_DIR="rosbag_dir/rosbag_dir_20260430"
+ROSBAG_DIRS="rosbag_dir/rosbag_dir_20260517"
+# ROSBAG_DIRS=(
+#     "rosbag_dir/rosbag_dir_20260517"
+#     "rosbag_dir/rosbag_dir_20260517_2"
+#     "rosbag_dir/rosbag_dir_20260517_3"
+#     "rosbag_dir/rosbag_dir_20260517_4"
+# )
 ROSBAG2VIDEO_RATE="50"
 
 # ===== generate_vid_prompt_ollama.py Variables =====
 VID_PROMPT_METADATA_PATH="$METADATA_CONFIG"
-VID_PROMPT_PARENT_DIR="$ROSBAG_DIR"
+# VID_PROMPT_PARENT_DIR="$ROSBAG_DIR"
 
 # ===== convert_rosbag_to_lerobot.py Variables =====
-CONVERT_INPUT_BAG_PATH="$ROSBAG_DIR"
-CONVERT_REPO_ID="brad/tracer_data_side_views"
+CONVERT_INPUT_BAG_PATHS=("${ROSBAG_DIRS[@]}")
+CONVERT_REPO_ID="brad/tracer_data_side_views_20260517-1"
 CONVERT_ROBOT_TYPE="tracer"
 CONVERT_FPS="50"
 CONVERT_CONFIG_PATH="$TOPIC_MAPPING_CONFIG"
@@ -44,7 +50,7 @@ COMPUTE_NORM_CONFIG_NAME="$CONFIG_NAME"
 
 # ===== train.py Variables =====
 TRAIN_CONFIG_NAME="$CONFIG_NAME"
-TRAIN_EXP_NAME="front_cam_dinning_$(date +%Y%m%d_%H%M%S)"
+TRAIN_EXP_NAME="front_cam_lora_dinning_data20260517-1_$(date +%Y%m%d_%H%M%S)"
 TRAIN_OVERWRITE_FLAG="--overwrite"
 TRAIN_XLA_MEM_FRACTION="0.9"
 TRAIN_OUTPUT_LOG="train_output_${TRAIN_EXP_NAME}.log"
@@ -94,7 +100,7 @@ fi
 if [[ $START_STEP -le 3 ]]; then
     echo "Step 3/5: Converting rosbag to LeRobot format..."
     uv run scripts/rosbag-to-lerobot/convert_rosbag_to_lerobot.py \
-        --input-bag-path "$CONVERT_INPUT_BAG_PATH" \
+        --input-bag-path "$CONVERT_INPUT_BAG_PATHS" \
         --repo-id "$CONVERT_REPO_ID" \
         --robot-type "$CONVERT_ROBOT_TYPE" \
         --fps "$CONVERT_FPS" \
