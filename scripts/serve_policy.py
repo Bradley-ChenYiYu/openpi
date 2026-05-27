@@ -10,6 +10,23 @@ from openpi.policies import policy_config as _policy_config
 from openpi.serving import websocket_policy_server
 from openpi.training import config as _config
 
+from openpi.policies import tracer_front_left_policy
+from openpi.policies import tracer_front_right_policy
+from openpi.policies import tracer_policy
+from openpi.policies import tracer_side_policy
+
+def _get_warmup_example(train_config: _config.TrainConfig) -> dict | None:
+    data = train_config.data
+    if isinstance(data, _config.LeRobotTracerFrontLeftDataConfig):
+        return tracer_front_left_policy.make_tracer_front_left_example()
+    if isinstance(data, _config.LeRobotTracerFrontRightDataConfig):
+        return tracer_front_right_policy.make_tracer_front_right_example()
+    if isinstance(data, _config.LeRobotTracerSideDataConfig):
+        return tracer_side_policy.make_tracer_side_example()
+    if isinstance(data, _config.LeRobotTracerDataConfig):
+        return tracer_policy.make_tracer_example()
+    return None
+
 
 class EnvMode(enum.Enum):
     """Supported environments."""
@@ -50,6 +67,10 @@ class Args:
     port: int = 8000
     # Record the policy's behavior for debugging.
     record: bool = False
+    # Warm up the policy with a dummy input before serving.
+    warmup: bool = False
+    # Number of warmup inferences to run.
+    warmup_steps: int = 1
 
     # Specifies how to load the policy. If not provided, the default policy for the environment will be used.
     policy: Checkpoint | Default = dataclasses.field(default_factory=Default)
@@ -87,18 +108,45 @@ def create_default_policy(env: EnvMode, *, default_prompt: str | None = None) ->
 
 def create_policy(args: Args) -> _policy.Policy:
     """Create a policy from the given arguments."""
+    train_config = get_train_config(args)
     match args.policy:
         case Checkpoint():
-            return _policy_config.create_trained_policy(
-                _config.get_config(args.policy.config), args.policy.dir, default_prompt=args.default_prompt
-            )
+            checkpoint_dir = args.policy.dir
         case Default():
-            return create_default_policy(args.env, default_prompt=args.default_prompt)
+            checkpoint_dir = DEFAULT_CHECKPOINT[args.env].dir
+
+    return _policy_config.create_trained_policy(
+        train_config, checkpoint_dir, default_prompt=args.default_prompt
+    )
+
+
+def get_train_config(args: Args) -> _config.TrainConfig:
+    """Resolve the training config for the given args."""
+    match args.policy:
+        case Checkpoint():
+            return _config.get_config(args.policy.config)
+        case Default():
+            checkpoint = DEFAULT_CHECKPOINT[args.env]
+            return _config.get_config(checkpoint.config)
 
 
 def main(args: Args) -> None:
+    train_config = get_train_config(args)
     policy = create_policy(args)
     policy_metadata = policy.metadata
+
+    if args.warmup:
+        example = _get_warmup_example(train_config)
+        if example is None:
+            logging.warning("Warmup skipped: no example for config %s", train_config.name)
+        else:
+            logging.info("Warming up policy with dummy input (%s steps)", args.warmup_steps)
+            for _ in range(max(args.warmup_steps, 1)):
+                try:
+                    policy.infer(example)
+                except Exception as exc:
+                    logging.exception("Warmup failed: %s", exc)
+                    break
 
     # Record the policy's behavior.
     if args.record:

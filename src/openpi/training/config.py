@@ -1165,7 +1165,7 @@ _CONFIGS = [
         name="pi0_tracer_front_finetune",
         model=pi0_config.Pi0Config(),
         data=LeRobotTracerDataConfig(
-            repo_id="brad/tracer_data_side_views_20260517-1",
+            repo_id="brad/tracer_data_side_views_20260526",
             base_config=DataConfig(prompt_from_task=True),
         ),
         weight_loader=weight_loaders.CheckpointWeightLoader("gs://openpi-assets/checkpoints/pi0_base/params"),
