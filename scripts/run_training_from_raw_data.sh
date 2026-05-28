@@ -34,7 +34,7 @@ VID_PROMPT_METADATA_PATH="$METADATA_CONFIG"
 
 # ===== convert_rosbag_to_lerobot.py Variables =====
 CONVERT_INPUT_BAG_PATHS=("${ROSBAG_DIRS[@]}")
-CONVERT_REPO_ID="brad/tracer_data_side_views_20260528"
+CONVERT_REPO_ID="brad/tracer_data_side_views_20260528_3RedCups"
 CONVERT_ROBOT_TYPE="tracer"
 CONVERT_FPS="50"
 CONVERT_CONFIG_PATH="$TOPIC_MAPPING_CONFIG"
@@ -46,7 +46,7 @@ COMPUTE_NORM_CONFIG_NAME="$CONFIG_NAME"
 
 # ===== train.py Variables =====
 TRAIN_CONFIG_NAME="$CONFIG_NAME"
-TRAIN_EXP_NAME="front_cam_dinning_data20260528_$(date +%Y%m%d_%H%M%S)"
+TRAIN_EXP_NAME="front_cam_dinning_data20260528-3RedCups_$(date +%Y%m%d_%H%M%S)"
 TRAIN_OVERWRITE_FLAG="--overwrite"
 TRAIN_XLA_MEM_FRACTION="0.9"
 TRAIN_OUTPUT_LOG="train_output_${TRAIN_EXP_NAME}.log"

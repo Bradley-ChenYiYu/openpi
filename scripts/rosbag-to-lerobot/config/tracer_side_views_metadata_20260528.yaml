@@ -9,9 +9,9 @@ episodes:
   rosbag2_2026_05_28-15_42_37:
     task: From the table with brown cups, go to the table with a black cloth.
   rosbag2_2026_05_28-15_43_10:
-    task: Go to the table with red cups.
+    task: Go to the table with three red cups.
   rosbag2_2026_05_28-15_43_51:
-    task: From the table with red cups, go to the table with a black cloth.
+    task: From the table with three red cups, go to the table with a black cloth.
   rosbag2_2026_05_28-15_45_58:
     task: Go to the table with a white jug.
   rosbag2_2026_05_28-15_47_03:
