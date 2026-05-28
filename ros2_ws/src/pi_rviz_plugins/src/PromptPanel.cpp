@@ -2,6 +2,7 @@
 #include <rviz_common/display_context.hpp>
 #include <QVBoxLayout>
 #include <QFont>
+#include <algorithm>
 
 namespace pi_rviz_plugins {
 
@@ -53,10 +54,19 @@ void PromptPanel::onUpdateClicked() {
     auto param_client = std::make_shared<rclcpp::AsyncParametersClient>(node, target_node_name_);
     
     // We use a lambda to handle the result asynchronously to avoid blocking the UI thread
-    param_client->set_parameters({rclcpp::Parameter(target_param_name_, std::string(new_prompt))}, 
+    param_client->set_parameters(
+        {
+            rclcpp::Parameter(target_param_name_, std::string(new_prompt)),
+            rclcpp::Parameter(target_enable_action_flow_param_name_, true)
+        },
         [this, param_client](std::shared_future<std::vector<rcl_interfaces::msg::SetParametersResult>> future) {
             auto result = future.get();
-            if (!result.empty() && result[0].successful) {
+            const bool all_successful = !result.empty() &&
+                                        std::all_of(result.begin(), result.end(), [](const auto& item) {
+                                            return item.successful;
+                                        });
+
+            if (all_successful) {
                 status_label_->setText("[Success: Updated]");
                 status_label_->setStyleSheet("color: green;");
             } else {
