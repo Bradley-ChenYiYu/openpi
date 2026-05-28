@@ -22,10 +22,12 @@ protected:
     // UI Elements
     QLineEdit* prompt_input_;
     QPushButton* update_button_;
+    QPushButton* stop_button_;
     QLabel* status_label_;
 
 private slots:
     void onUpdateClicked();
+    void onStopClicked();
 
 private:
     // The node name we want to update parameters for
