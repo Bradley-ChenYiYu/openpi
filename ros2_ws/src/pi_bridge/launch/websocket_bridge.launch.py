@@ -25,6 +25,7 @@ def generate_launch_description() -> LaunchDescription:
         DeclareLaunchArgument("send_rate_hz", default_value="10.0"),
         DeclareLaunchArgument("sync_tolerance_sec", default_value="0.25"),
         DeclareLaunchArgument("prompt", default_value="do something"),
+                DeclareLaunchArgument("enable_request_action_flow", default_value="true"),
         DeclareLaunchArgument("robot_bridge_executable", default_value="tracer_side_bridge", description= \
                               "Available options: tracer_bridge, tracer_side_bridge, tracer_front_left_bridge, tracer_front_right_bridge. \
                                 This should match the executable name of the corresponding Node class in pi_bridge."), # Added robot_bridge_executable argument
@@ -56,6 +57,7 @@ def generate_launch_description() -> LaunchDescription:
                 "send_rate_hz": LaunchConfiguration("send_rate_hz"),
                 "sync_tolerance_sec": LaunchConfiguration("sync_tolerance_sec"),
                 "prompt": LaunchConfiguration("prompt"),
+                "enable_request_action_flow": LaunchConfiguration("enable_request_action_flow"),
             }
         ],
     )
