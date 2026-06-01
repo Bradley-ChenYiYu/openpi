@@ -181,7 +181,8 @@ class PiWebsocketBridgeBase(Node):
         self.declare_parameter("max_reconnect_interval_sec", 8.0)
         self.declare_parameter("sync_tolerance_sec", 0.25)
         self.declare_parameter("prompt", "do something")
-        self.add_on_set_parameters_callback(self._on_prompt_param_change)
+        self.declare_parameter("enable_request_action_flow", True)
+        self.add_on_set_parameters_callback(self._on_param_change)
         self.declare_parameter("action_rate_hz", 20.0)
         self.declare_parameter("diagnostics_topic", "/pi_bridge/diagnostics")
         self.declare_parameter("ack_topic", "/pi_bridge/control_ack")
@@ -195,6 +196,7 @@ class PiWebsocketBridgeBase(Node):
         self._send_rate_hz = float(self.get_parameter("send_rate_hz").value)
         self._sync_tolerance_sec = float(self.get_parameter("sync_tolerance_sec").value)
         self._prompt = self.get_parameter("prompt").value
+        self._enable_request_action_flow = bool(self.get_parameter("enable_request_action_flow").value)
         self._action_rate_hz = float(self.get_parameter("action_rate_hz").value)
         diagnostics_topic = self.get_parameter("diagnostics_topic").value
         ack_topic = self.get_parameter("ack_topic").value
@@ -282,6 +284,8 @@ class PiWebsocketBridgeBase(Node):
 
     def _on_send_timer(self):
         self._drain_infer_result()
+        if not self._enable_request_action_flow:
+            return
         if not self._manager.connected: return
         with self._lock:
             images, odom = self._latest_images, self._latest_odom
@@ -319,7 +323,7 @@ class PiWebsocketBridgeBase(Node):
         future = self._infer_future; self._infer_future = None
         try:
             response = future.result()
-            if response:
+            if response and self._enable_request_action_flow:
                 self._last_latency_ms = (self.get_clock().now().nanoseconds - self._infer_sent_ns) / 1e6
                 self._total_responses += 1
                 self._enqueue_actions(response)
@@ -345,6 +349,8 @@ class PiWebsocketBridgeBase(Node):
             self._parse_failures += 1; self.get_logger().warning(f"Action queue fail: {exc}")
 
     def _on_cmd_timer(self):
+        if not self._enable_request_action_flow:
+            return
         with self._action_lock:
             action = self._pending_actions.popleft() if self._pending_actions else self._last_action
         if action:
@@ -371,9 +377,18 @@ class PiWebsocketBridgeBase(Node):
         self._infer_executor.shutdown(wait=False, cancel_futures=True)
         return super().destroy_node()
 
-    def _on_prompt_param_change(self, params):
+    def _on_param_change(self, params):
         for param in params:
             if param.name == "prompt":
                 self._prompt = param.value
                 self.get_logger().info(f"Prompt updated to: {self._prompt}")
+            elif param.name == "enable_request_action_flow":
+                self._enable_request_action_flow = bool(param.value)
+                if not self._enable_request_action_flow:
+                    with self._action_lock:
+                        self._pending_actions.clear()
+                    self._infer_future = None
+                self.get_logger().info(
+                    f"Request/action flow {'enabled' if self._enable_request_action_flow else 'paused'}"
+                )
         return SetParametersResult(successful=True)

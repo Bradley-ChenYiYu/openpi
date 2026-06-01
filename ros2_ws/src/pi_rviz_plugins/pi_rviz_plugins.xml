@@ -2,4 +2,7 @@
   <class type="pi_rviz_plugins::PromptPanel" base_class_type="rviz_common::Panel">
     <description>Panel to update the prompt parameter of the pi_websocket_bridge node.</description>
   </class>
+  <class type="pi_rviz_plugins::AvailablePromptsPanel" base_class_type="rviz_common::Panel">
+    <description>Panel showing the available prompts for the pi_websocket_bridge node.</description>
+  </class>
 </library>

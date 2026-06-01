@@ -17,11 +17,16 @@ set(CMAKE_AUTOMOC ON)
 
 qt5_wrap_cpp(MOC_FILES
   include/pi_rviz_plugins/PromptPanel.hpp
+  include/pi_rviz_plugins/AvailablePromptsPanel.hpp
 )
 
 # Explicitly set as SHARED library because pluginlib requires a .so file for dynamic loading at runtime.
 # Without SHARED, it may default to a static library, causing RViz to fail to load the plugin.
-add_library(prompt_panel SHARED src/PromptPanel.cpp ${MOC_FILES})
+add_library(prompt_panel SHARED
+  src/PromptPanel.cpp
+  src/AvailablePromptsPanel.cpp
+  ${MOC_FILES}
+)
 target_include_directories(prompt_panel PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>
