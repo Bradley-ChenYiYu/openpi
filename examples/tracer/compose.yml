@@ -19,8 +19,14 @@ services:
       - $PWD:/openpi
       - /tmp/.X11-unix:/tmp/.X11-unix
       - /dev:/dev
+      # - /etc/localtime:/etc/localtime:ro
+      # - /dev/dri:/dev/dri
+      # - /run/user/1000:/run/user/1000
     environment:
       - DISPLAY=$DISPLAY
+      # - XDG_RUNTIME_DIR=/run/user/1000
+      - LIBGL_ALWAYS_SOFTWARE=1
+      - __GLX_VENDOR_LIBRARY_NAME=mesa
 
   openpi_server:
     image: openpi_server

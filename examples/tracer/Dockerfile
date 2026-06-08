@@ -24,6 +24,10 @@ RUN apt-get update && \
     libasio-dev \
     udev \
     xboxdrv \
+    mesa-utils \
+    libgl1-mesa-glx \
+    libgl1-mesa-dri \
+    libegl1-mesa \
 && apt-get install -y \
     python3-pip \
     ros-humble-realsense2-* \
