@@ -33,7 +33,7 @@ class VoiceCommandNode(Node):
         # Declare parameters
         self.declare_parameter("websocket_host", "0.0.0.0")
         self.declare_parameter("websocket_port", 9001)
-        self.declare_parameter("target_node", "pi_websocket_bridge_base")
+        self.declare_parameter("target_node", "pi_websocket_bridge")
         self.declare_parameter("reconnect_interval_sec", 5.0)
         self.declare_parameter("max_reconnect_interval_sec", 30.0)
         self.declare_parameter("command_probability_threshold", 0.5)
@@ -189,14 +189,17 @@ class VoiceCommandNode(Node):
             self.get_logger().warning("Parameter service not ready, cannot update prompt")
             return
 
-        from rclpy.parameter import Parameter
-        
         try:
-            request = SetParameters.Request()
-            request.parameters = [Parameter("prompt", Parameter.Type.STRING_VALUE, prompt)]
+            # Use the simpler rclpy method - call set_parameters directly
+            from rclpy.parameter import Parameter
             
+            # Create a request with Parameter objects
+            request = SetParameters.Request()
+            request.parameters = [Parameter("prompt", value=prompt).to_parameter_msg()]
+            
+            # Call async with callback
             future = self._param_client.call_async(request)
-            rclpy.get_global_executor().add_future(future, lambda f: self._on_param_update_result(f, prompt))
+            future.add_done_callback(lambda f: self._on_param_update_result(f, prompt))
             
         except Exception as e:
             self.get_logger().error(f"Failed to update parameter: {e}")
