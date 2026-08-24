@@ -13,3 +13,7 @@
 [submodule "ros2_ws/src/ugv_sdk"]
 	path = ros2_ws/src/ugv_sdk
 	url = git@github.com:westonrobot/ugv_sdk.git
+[submodule "scripts/whisper.cpp"]
+	path = scripts/whisper.cpp
+	url = git@github.com:Bradley-ChenYiYu/whisper.cpp.git
+	branch = feat/web
