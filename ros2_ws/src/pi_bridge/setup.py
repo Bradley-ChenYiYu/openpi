@@ -17,7 +17,7 @@ setup(
         ('share/' + package_name + '/config', config_files),
         ('share/' + package_name, ['README.md']),
     ],
-    install_requires=['setuptools', 'numpy', 'msgpack', 'websockets>=11.0', 'typing_extensions'],
+    install_requires=['setuptools', 'numpy', 'msgpack', 'websockets>=11.0', 'websocket-client>=1.6.0', 'typing_extensions'],
     zip_safe=True,
     maintainer='ubuntu',
     maintainer_email='172489412+Bradley-ChenYiYu@users.noreply.github.com',
@@ -37,6 +37,7 @@ setup(
             'task_flow_controller = pi_bridge.task_flow_controller:main',
             'websocket_bridge = pi_bridge.websocket_bridge_node:main',
             'random_test_publisher = pi_bridge.random_test_publisher:main',
+            'voice_command_node = pi_bridge.voice_command_node:main',
         ],
     },
 )
