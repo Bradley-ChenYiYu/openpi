@@ -1165,11 +1165,11 @@ _CONFIGS = [
         name="pi0_tracer_front_finetune",
         model=pi0_config.Pi0Config(),
         data=LeRobotTracerDataConfig(
-            repo_id="brad/tracer_data_side_views_20260528_3RedCups",
+            repo_id="brad/tracer_data_side_views_20260530-0531",
             base_config=DataConfig(prompt_from_task=True),
         ),
         weight_loader=weight_loaders.CheckpointWeightLoader("gs://openpi-assets/checkpoints/pi0_base/params"),
-        num_train_steps=5_001,
+        num_train_steps=20_001,
         batch_size=32,
         save_interval = 1000,
         keep_period = 1000,
