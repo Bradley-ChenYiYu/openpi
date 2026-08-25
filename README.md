@@ -335,11 +335,14 @@ We will collect common issues and their solutions here. If you encounter an issu
     ```
 
 2. Start recording:  
-    
+    ```bash
+    ros2 bag record -b 2147483648 /cmd_vel /odom /camera/camera/color/image_raw
+    ```
+
     - `-b`: $2\times 1024^3$ bytes  
 
     ```bash
-    ros2 bag record -b 2147483648 /cmd_vel /odom /camera/camera/color/image_raw
+    ros2 bag record -b 2147483648 -e "/cmd_vel|/odom|.*/color/(image_raw|camera_info)"
     ```
 
 ### Multi-rosbag to LeRobot data  
