@@ -11,6 +11,7 @@
 3. [模型訓練](#3-模型訓練)
 4. [模型推論](#4-模型推論)
 5. [語音命令集成](#5-語音命令集成)
+6. [TODO](#todo)
 
 ---
 
@@ -526,14 +527,18 @@ export XLA_PYTHON_CLIENT_MEM_FRACTION=0.9
 uv run scripts/compute_norm_stats.py --config-name <your_config>
 ```
 
-**Policy Server 連接錯誤：**
-```bash
-curl http://localhost:8000/healthz
-```
-
 **語音命令未執行：**
 - 檢查 `command_probability_threshold` 閾值
 - 驗證命令映射表
+
+## TODO
+
+1. 目前主要 git branch 為：
+  - tested-feature: 測試成功的 branch 會被 merge 進來
+  - robot/voice-command: Voice command feature
+  - data/rosbag-to-lerobot: Training 相關
+  - robot/tracer: 與 tracer 相關
+  - robot/aruco-nav: 為完成整的 ArUco navigation
 
 ---
 
