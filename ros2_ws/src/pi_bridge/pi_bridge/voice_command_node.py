@@ -7,8 +7,10 @@ and updates the 'prompt' parameter of the pi_websocket_bridge node via ROS2 para
 """
 
 import json
+import re
 import sys
 import threading
+from typing import Dict, Optional
 
 import rclpy
 from rclpy.node import Node
@@ -24,6 +26,85 @@ except ImportError:
     sys.exit(1)
 
 
+# Command mapping for voice to task transformation
+GO_TO_COMMANDS: Dict[str, str] = {
+    "brown cups": "Go to the table with brown cups.",
+    "red cups": "Go to the table with big red cups.",
+    "sandwich": "Go to the table with a sandwich.",
+    "white jug": "Go to the table with a white jug.",
+}
+
+# "Go back" command mappings (requires previous location state)
+GO_BACK_COMMANDS: Dict[str, str] = {
+    "brown cups": "From the table with brown cups, go to the table with a black cloth.",
+    "red cups": "From the table with big red cups, go to the table with a black cloth.",
+    "sandwich": "From the table with a sandwich, go to the table with a black cloth.",
+    "white jug": "From the table with a white jug, go to the table with a black cloth.",
+}
+
+
+class CommandStateMachine:
+    """State machine for transforming voice commands into task descriptions."""
+    
+    def __init__(self) -> None:
+        self._current_location: Optional[str] = None
+    
+    def transform_command(self, command: str) -> Optional[str]:
+        """
+        Transform a voice command into a standardized task description.
+        
+        Args:
+            command: The raw voice command string
+            
+        Returns:
+            Transformed task description, or None if command cannot be parsed
+        """
+        command_lower = command.lower().strip()
+        
+        # Check for "go back" pattern
+        if "go back" in command_lower or "go back to" in command_lower:
+            return self._handle_go_back(command_lower)
+        
+        # Check for "go to" pattern
+        if "go to" in command_lower:
+            return self._handle_go_to(command_lower)
+        
+        # Direct location match
+        return self._handle_direct_location(command_lower)
+    
+    def _handle_go_to(self, command: str) -> Optional[str]:
+        """Handle 'go to <location>' commands."""
+        for location, task in GO_TO_COMMANDS.items():
+            if location in command:
+                self._current_location = location
+                return task
+        return None
+    
+    def _handle_go_back(self, command: str) -> Optional[str]:
+        """Handle 'go back to <location>' or 'go back' commands."""
+        for location, task in GO_BACK_COMMANDS.items():
+            if location in command:
+                return task
+        
+        # If no location specified, use current location
+        if self._current_location and self._current_location in GO_BACK_COMMANDS:
+            return GO_BACK_COMMANDS[self._current_location]
+        
+        return None
+    
+    def _handle_direct_location(self, command: str) -> Optional[str]:
+        """Handle direct location mentions (assumed to be 'go to')."""
+        for location, task in GO_TO_COMMANDS.items():
+            if location in command:
+                self._current_location = location
+                return task
+        return None
+    
+    def reset(self) -> None:
+        """Reset the state machine."""
+        self._current_location = None
+
+
 class VoiceCommandNode(Node):
     """Node that listens to WebSocket for voice commands and updates ROS2 parameters."""
 
@@ -36,7 +117,7 @@ class VoiceCommandNode(Node):
         self.declare_parameter("target_node", "pi_websocket_bridge")
         self.declare_parameter("reconnect_interval_sec", 5.0)
         self.declare_parameter("max_reconnect_interval_sec", 30.0)
-        self.declare_parameter("command_probability_threshold", 0.5)
+        self.declare_parameter("command_probability_threshold", 0.2)
         self.declare_parameter("enable_auto_update", True)
 
         # Read parameters
@@ -47,6 +128,9 @@ class VoiceCommandNode(Node):
         self._max_reconnect_interval_sec = float(self.get_parameter("max_reconnect_interval_sec").value)
         self._probability_threshold = float(self.get_parameter("command_probability_threshold").value)
         self._enable_auto_update = bool(self.get_parameter("enable_auto_update").value)
+
+        # Command state machine
+        self._command_state_machine = CommandStateMachine()
 
         # WebSocket state
         self._ws: websocket.WebSocketApp | None = None
@@ -126,20 +210,37 @@ class VoiceCommandNode(Node):
                 self.get_logger().info(f"Connected to voice command server. Clients: {data.get('clients', 'N/A')}")
             
             elif msg_type == "command":
-                command = data.get("command", "")
+                raw_command = data.get("command", "")
                 probability = data.get("probability", 0.0)
                 mode = data.get("mode", "N/A")
                 duration_ms = data.get("duration_ms", 0)
                 timestamp = data.get("timestamp", 0)
 
                 self.get_logger().info(
-                    f"Voice Command Detected! | Mode: {mode} | Command: '{command}' | "
+                    f"Voice Command Detected! | Mode: {mode} | Command: '{raw_command}' | "
                     f"Probability: {probability*100:.1f}% | Duration: {duration_ms}ms"
                 )
 
+                # Transform command through state machine
+                transformed_command = self._command_state_machine.transform_command(raw_command)
+                
+                if transformed_command:
+                    self.get_logger().info(f"✓ Command transformed: '{raw_command}' → '{transformed_command}'")
+                else:
+                    self.get_logger().warning(f"✗ Could not transform command: '{raw_command}'")
+                    transformed_command = raw_command  # Fall back to raw command
+
                 # Update prompt parameter if probability is above threshold
-                if self._enable_auto_update and probability >= self._probability_threshold and command:
-                    self._update_prompt_parameter(command)
+                if not transformed_command:
+                    self.get_logger().warning("Empty command received, skipping update")
+                elif probability < self._probability_threshold:
+                    self.get_logger().warning(
+                        f"Command probability {probability*100:.1f}% below threshold {self._probability_threshold*100:.1f}%, skipping update"
+                    )
+                elif not self._enable_auto_update:
+                    self.get_logger().warning("Auto-update disabled, skipping parameter update")
+                else:
+                    self._update_prompt_parameter(transformed_command)
 
             elif msg_type == "telemetry":
                 pass  # Silently handle telemetry messages
