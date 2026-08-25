@@ -1,0 +1,22 @@
+# Optional metadata file for task text and episode-level tags.
+# One bag directory maps to one episode.
+
+default_task: Navigate around the room
+
+episodes:
+  rosbag2_2026_05_28-15_42_04:
+    task: Go to the table with brown cups.
+  rosbag2_2026_05_28-15_42_37:
+    task: From the table with brown cups, go to the table with a black cloth.
+  rosbag2_2026_05_28-15_43_10:
+    task: Go to the table with three red cups.
+  rosbag2_2026_05_28-15_43_51:
+    task: From the table with three red cups, go to the table with a black cloth.
+  rosbag2_2026_05_28-15_45_58:
+    task: Go to the table with a white jug.
+  rosbag2_2026_05_28-15_47_03:
+    task: From the table with a white jug, go to the table with a black cloth.
+  rosbag2_2026_05_28-15_48_14:
+    task: Go to the table with a sandwich.
+  rosbag2_2026_05_28-15_49_09:
+    task: From the table with a sandwich, go to the table with a black cloth.

@@ -1,0 +1,278 @@
+# Optional metadata file for task text and episode-level tags.
+# One bag directory maps to one episode.
+
+default_task: Navigate around the room
+
+episodes:
+  rosbag2_2026_05_30-16_13_45:
+    task: Go to the table with brown cups.
+  rosbag2_2026_05_30-16_14_17:
+    task: From the table with brown cups, go to the table with a black cloth.
+  rosbag2_2026_05_30-16_16_26:
+    task: Go to the table with big red cups.
+  rosbag2_2026_05_30-16_17_06:
+    task: From the table with big red cups, go to the table with a black cloth.
+  rosbag2_2026_05_30-16_17_47:
+    task: Go to the table with a sandwich.
+  rosbag2_2026_05_30-16_18_43:
+    task: From the table with a sandwich, go to the table with a black cloth.
+  rosbag2_2026_05_30-16_21_23:
+    task: Go to the table with a white jug.
+  rosbag2_2026_05_30-16_22_30:
+    task: From the table with a white jug, go to the table with a black cloth.
+  rosbag2_2026_05_30-16_24_04:
+    task: Go to the table with brown cups.
+  rosbag2_2026_05_30-16_24_43:
+    task: From the table with brown cups, go to the table with a black cloth.
+  rosbag2_2026_05_30-16_25_23:
+    task: Go to the table with big red cups.
+  rosbag2_2026_05_30-16_26_25:
+    task: From the table with big red cups, go to the table with a black cloth.
+  rosbag2_2026_05_30-16_27_04:
+    task: Go to the table with a sandwich.
+  rosbag2_2026_05_30-16_28_03:
+    task: From the table with a sandwich, go to the table with a black cloth.
+  rosbag2_2026_05_30-16_28_49:
+    task: Go to the table with a white jug.
+  rosbag2_2026_05_30-16_29_50:
+    task: From the table with a white jug, go to the table with a black cloth.
+  rosbag2_2026_05_31-12_23_19:
+    task: Go to the table with brown cups.
+  rosbag2_2026_05_31-12_23_55:
+    task: From the table with brown cups, go to the table with a black cloth.
+  rosbag2_2026_05_31-12_24_36:
+    task: Go to the table with big red cups.
+  rosbag2_2026_05_31-12_25_52:
+    task: From the table with big red cups, go to the table with a black cloth.
+  rosbag2_2026_05_31-12_26_36:
+    task: Go to the table with a sandwich.
+  rosbag2_2026_05_31-12_27_47:
+    task: From the table with a sandwich, go to the table with a black cloth.
+  rosbag2_2026_05_31-12_29_04:
+    task: Go to the table with a white jug.
+  rosbag2_2026_05_31-12_30_09:
+    task: From the table with a white jug, go to the table with a black cloth.
+  rosbag2_2026_05_31-12_32_05:
+    task: Go to the table with brown cups.
+  rosbag2_2026_05_31-12_32_38:
+    task: From the table with brown cups, go to the table with a black cloth.
+  rosbag2_2026_05_31-12_33_20:
+    task: Go to the table with big red cups.
+  rosbag2_2026_05_31-12_34_04:
+    task: From the table with big red cups, go to the table with a black cloth.
+  rosbag2_2026_05_31-12_34_46:
+    task: Go to the table with a white jug.
+  rosbag2_2026_05_31-12_36_19:
+    task: From the table with a white jug, go to the table with a black cloth.
+  rosbag2_2026_05_31-12_37_50:
+    task: Go to the table with a sandwich.
+  rosbag2_2026_05_31-12_38_53:
+    task: From the table with a sandwich, go to the table with a black cloth.
+  rosbag2_2026_05_31-12_40_32:
+    task: Go to the table with brown cups.
+  rosbag2_2026_05_31-12_41_07:
+    task: From the table with brown cups, go to the table with a black cloth.
+  rosbag2_2026_05_31-12_41_50:
+    task: Go to the table with big red cups.
+  rosbag2_2026_05_31-12_42_40:
+    task: From the table with big red cups, go to the table with a black cloth.
+  rosbag2_2026_05_31-12_43_22:
+    task: Go to the table with a white jug.
+  rosbag2_2026_05_31-12_44_22:
+    task: From the table with a white jug, go to the table with a black cloth.
+  rosbag2_2026_05_31-12_45_27:
+    task: Go to the table with a sandwich.
+  rosbag2_2026_05_31-12_46_25:
+    task: From the table with a sandwich, go to the table with a black cloth.
+  rosbag2_2026_05_31-12_47_59:
+    task: Go to the table with brown cups.
+  rosbag2_2026_05_31-12_48_34:
+    task: From the table with brown cups, go to the table with a black cloth.
+  rosbag2_2026_05_31-12_49_15:
+    task: Go to the table with big red cups.
+  rosbag2_2026_05_31-12_49_59:
+    task: From the table with big red cups, go to the table with a black cloth.
+  rosbag2_2026_05_31-12_50_42:
+    task: Go to the table with a white jug.
+  rosbag2_2026_05_31-12_51_44:
+    task: From the table with a white jug, go to the table with a black cloth.
+  rosbag2_2026_05_31-12_52_49:
+    task: Go to the table with a sandwich.
+  rosbag2_2026_05_31-12_53_54:
+    task: From the table with a sandwich, go to the table with a black cloth.
+  rosbag2_2026_05_31-12_55_15:
+    task: Go to the table with brown cups.
+  rosbag2_2026_05_31-12_55_52:
+    task: From the table with brown cups, go to the table with a black cloth.
+  rosbag2_2026_05_31-12_56_57:
+    task: Go to the table with big red cups.
+  rosbag2_2026_05_31-12_57_41:
+    task: From the table with big red cups, go to the table with a black cloth.
+  rosbag2_2026_05_31-13_00_13:
+    task: Go to the table with a white jug.
+  rosbag2_2026_05_31-13_01_16:
+    task: From the table with a white jug, go to the table with a black cloth.
+  rosbag2_2026_05_31-13_02_17:
+    task: Go to the table with a sandwich.
+  rosbag2_2026_05_31-13_03_18:
+    task: From the table with a sandwich, go to the table with a black cloth.
+  rosbag2_2026_05_31-14_49_02:
+    task: Go to the table with brown cups.
+  rosbag2_2026_05_31-14_49_32:
+    task: From the table with brown cups, go to the table with a black cloth.
+  rosbag2_2026_05_31-14_50_11:
+    task: Go to the table with big red cups.
+  rosbag2_2026_05_31-14_50_53:
+    task: From the table with big red cups, go to the table with a black cloth.
+  rosbag2_2026_05_31-14_51_34:
+    task: Go to the table with a white jug.
+  rosbag2_2026_05_31-14_52_34:
+    task: From the table with a white jug, go to the table with a black cloth.
+  rosbag2_2026_05_31-14_53_39:
+    task: Go to the table with a sandwich.
+  rosbag2_2026_05_31-14_54_33:
+    task: From the table with a sandwich, go to the table with a black cloth.
+  rosbag2_2026_05_31-14_57_01:
+    task: Go to the table with brown cups.
+  rosbag2_2026_05_31-14_57_35:
+    task: From the table with brown cups, go to the table with a black cloth.
+  rosbag2_2026_05_31-14_58_14:
+    task: Go to the table with big red cups.
+  rosbag2_2026_05_31-14_58_53:
+    task: From the table with big red cups, go to the table with a black cloth.
+  rosbag2_2026_05_31-14_59_36:
+    task: Go to the table with a white jug.
+  rosbag2_2026_05_31-15_00_35:
+    task: From the table with a white jug, go to the table with a black cloth.
+  rosbag2_2026_05_31-15_01_34:
+    task: Go to the table with a sandwich.
+  rosbag2_2026_05_31-15_02_32:
+    task: From the table with a sandwich, go to the table with a black cloth.
+  rosbag2_2026_05_31-15_03_54:
+    task: Go to the table with brown cups.
+  rosbag2_2026_05_31-15_04_27:
+    task: From the table with brown cups, go to the table with a black cloth.
+  rosbag2_2026_05_31-15_05_27:
+    task: Go to the table with big red cups.
+  rosbag2_2026_05_31-15_06_12:
+    task: From the table with big red cups, go to the table with a black cloth.
+  rosbag2_2026_05_31-15_06_53:
+    task: Go to the table with a white jug.
+  rosbag2_2026_05_31-15_07_50:
+    task: From the table with a white jug, go to the table with a black cloth.
+  rosbag2_2026_05_31-15_08_50:
+    task: Go to the table with a sandwich.
+  rosbag2_2026_05_31-15_09_42:
+    task: From the table with a sandwich, go to the table with a black cloth.
+  rosbag2_2026_05_31-16_08_06:
+    task: Go to the table with brown cups.
+  rosbag2_2026_05_31-16_08_40:
+    task: From the table with brown cups, go to the table with a black cloth.
+  rosbag2_2026_05_31-16_09_25:
+    task: Go to the table with big red cups.
+  rosbag2_2026_05_31-16_10_08:
+    task: From the table with big red cups, go to the table with a black cloth.
+  rosbag2_2026_05_31-16_10_54:
+    task: Go to the table with a white jug.
+  rosbag2_2026_05_31-16_11_56:
+    task: From the table with a white jug, go to the table with a black cloth.
+  rosbag2_2026_05_31-16_12_57:
+    task: Go to the table with a sandwich.
+  rosbag2_2026_05_31-16_14_00:
+    task: From the table with a sandwich, go to the table with a black cloth.
+  rosbag2_2026_05_31-16_16_13:
+    task: Go to the table with brown cups.
+  rosbag2_2026_05_31-16_16_44:
+    task: From the table with brown cups, go to the table with a black cloth.
+  rosbag2_2026_05_31-16_17_33:
+    task: Go to the table with big red cups.
+  rosbag2_2026_05_31-16_18_14:
+    task: From the table with big red cups, go to the table with a black cloth.
+  rosbag2_2026_05_31-16_18_59:
+    task: Go to the table with a white jug.
+  rosbag2_2026_05_31-16_20_03:
+    task: From the table with a white jug, go to the table with a black cloth.
+  rosbag2_2026_05_31-16_21_09:
+    task: Go to the table with a sandwich.
+  rosbag2_2026_05_31-16_22_02:
+    task: From the table with a sandwich, go to the table with a black cloth.
+  rosbag2_2026_05_31-16_23_22:
+    task: Go to the table with brown cups.
+  rosbag2_2026_05_31-16_23_55:
+    task: From the table with brown cups, go to the table with a black cloth.
+  rosbag2_2026_05_31-16_24_31:
+    task: Go to the table with big red cups.
+  rosbag2_2026_05_31-16_25_14:
+    task: From the table with big red cups, go to the table with a black cloth.
+  rosbag2_2026_05_31-16_25_54:
+    task: Go to the table with a white jug.
+  rosbag2_2026_05_31-16_26_49:
+    task: From the table with a white jug, go to the table with a black cloth.
+  rosbag2_2026_05_31-16_27_47:
+    task: Go to the table with a sandwich.
+  rosbag2_2026_05_31-16_28_45:
+    task: From the table with a sandwich, go to the table with a black cloth.
+  rosbag2_2026_05_31-16_30_11:
+    task: Go to the table with brown cups.
+  rosbag2_2026_05_31-16_30_47:
+    task: From the table with brown cups, go to the table with a black cloth.
+  rosbag2_2026_05_31-16_31_28:
+    task: Go to the table with big red cups.
+  rosbag2_2026_05_31-16_32_10:
+    task: From the table with big red cups, go to the table with a black cloth.
+  rosbag2_2026_05_31-16_32_49:
+    task: Go to the table with a white jug.
+  rosbag2_2026_05_31-16_33_51:
+    task: From the table with a white jug, go to the table with a black cloth.
+  rosbag2_2026_05_31-16_34_49:
+    task: Go to the table with a sandwich.
+  rosbag2_2026_05_31-16_35_51:
+    task: From the table with a sandwich, go to the table with a black cloth.
+  rosbag2_2026_05_31-16_37_48:
+    task: Go to the table with brown cups.
+  rosbag2_2026_05_31-16_38_22:
+    task: From the table with brown cups, go to the table with a black cloth.
+  rosbag2_2026_05_31-16_39_03:
+    task: Go to the table with big red cups.
+  rosbag2_2026_05_31-16_39_42:
+    task: From the table with big red cups, go to the table with a black cloth.
+  rosbag2_2026_05_31-16_40_24:
+    task: Go to the table with a white jug.
+  rosbag2_2026_05_31-16_41_26:
+    task: From the table with a white jug, go to the table with a black cloth.
+  rosbag2_2026_05_31-16_42_27:
+    task: Go to the table with a sandwich.
+  rosbag2_2026_05_31-16_43_32:
+    task: From the table with a sandwich, go to the table with a black cloth.
+  rosbag2_2026_05_31-16_45_33:
+    task: Go to the table with brown cups.
+  rosbag2_2026_05_31-16_48_14:
+    task: From the table with brown cups, go to the table with a black cloth.
+  rosbag2_2026_05_31-16_48_53:
+    task: Go to the table with big red cups.
+  rosbag2_2026_05_31-16_49_36:
+    task: From the table with big red cups, go to the table with a black cloth.
+  rosbag2_2026_05_31-16_50_17:
+    task: Go to the table with a white jug.
+  rosbag2_2026_05_31-16_51_21:
+    task: From the table with a white jug, go to the table with a black cloth.
+  rosbag2_2026_05_31-16_52_28:
+    task: Go to the table with a sandwich.
+  rosbag2_2026_05_31-16_53_23:
+    task: From the table with a sandwich, go to the table with a black cloth.
+  rosbag2_2026_05_31-18_09_07:
+    task: Go to the table with brown cups.
+  rosbag2_2026_05_31-18_09_46:
+    task: From the table with brown cups, go to the table with a black cloth.
+  rosbag2_2026_05_31-18_10_22:
+    task: Go to the table with big red cups.
+  rosbag2_2026_05_31-18_11_07:
+    task: From the table with big red cups, go to the table with a black cloth.
+  rosbag2_2026_05_31-18_11_51:
+    task: Go to the table with a white jug.
+  rosbag2_2026_05_31-18_12_47:
+    task: From the table with a white jug, go to the table with a black cloth.
+  rosbag2_2026_05_31-18_13_48:
+    task: Go to the table with a sandwich.
+  rosbag2_2026_05_31-18_14_44:
+    task: From the table with a sandwich, go to the table with a black cloth.

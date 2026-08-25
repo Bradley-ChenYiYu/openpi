@@ -1,0 +1,38 @@
+# Required topic mapping schema for rosbag_to_lerobot.
+# Fill topics and optional msg_type checks for your bag.
+
+camera_topics:
+  front:
+    topic: /camera/front/color/image_raw
+    msg_type: sensor_msgs/msg/Image
+    # Optional resize [height, width]
+    resize: [224, 224]
+  left:
+    topic: /camera/left/color/image_raw
+    msg_type: sensor_msgs/msg/Image
+    # Optional resize [height, width]
+    resize: [224, 224]
+
+state_topic:
+  topic: /odom
+  msg_type: nav_msgs/msg/Odometry
+  dim: 2
+  fields:
+    - twist.twist.linear.x
+    - twist.twist.angular.z
+
+action_topic:
+  topic: /cmd_vel
+  msg_type: geometry_msgs/msg/Twist
+  dim: 2
+  fields:
+    - linear.x
+    - angular.z
+
+sync:
+  # Choose action or state as reference stream.
+  reference_stream: action
+  # Max allowed timestamp delta for nearest-neighbor matching.
+  tolerance_sec: 0.05
+  # drop or warn (currently both drop unmatched samples, warn keeps warning-oriented semantics).
+  drop_policy: drop

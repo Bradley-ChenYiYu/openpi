@@ -1,0 +1,36 @@
+# Optional metadata file for task text and episode-level tags.
+# One bag directory maps to one episode.
+
+default_task: Navigate around the room
+
+episodes:
+  rosbag2_2026_04_30-14_03_56:
+    task: Back up and turn right, then go to the table with brown cups.
+  rosbag2_2026_04_30-14_06_04:
+    task: Back up and turn around, then go to the table with a black cloth.
+  rosbag2_2026_04_30-14_08_32:
+    task: Back up and turn right, then go to the table with red cups.
+  rosbag2_2026_04_30-14_09_22:
+    task: Back up and turn right, then go to the table with a black cloth.
+  rosbag2_2026_04_30-14_11_16:
+    task: Back up and turn right, then go to the table with a black cloth.
+  rosbag2_2026_04_30-14_12_15:
+    task: Back up and turn right, then go to the table with a sandwich.
+  rosbag2_2026_04_30-14_13_11:
+    task: Back up and turn left, then go to the table with a black cloth.
+  rosbag2_2026_04_30-14_19_05:
+    task: Back up and turn right, then go to the table with brown cups.
+  rosbag2_2026_04_30-14_19_40:
+    task: Back up and turn left, then go to the table with a black cloth.
+  rosbag2_2026_04_30-14_20_18:
+    task: Back up and turn right, then go to the table with red cups.
+  rosbag2_2026_04_30-14_21_03:
+    task: Back up and turn right, then go to the table with a black cloth.
+  rosbag2_2026_04_30-14_23_55:
+    task: Back up and turn right, then go to the table with a black cloth.
+  rosbag2_2026_04_30-14_24_55:
+    task: Back up and turn right, then go to the table with a white jug.
+  rosbag2_2026_04_30-14_26_29:
+    task: Back up and turn right, then go to the table with a sandwich.
+  rosbag2_2026_04_30-14_27_22:
+    task: Back up and turn left, then go to the table with a black cloth.

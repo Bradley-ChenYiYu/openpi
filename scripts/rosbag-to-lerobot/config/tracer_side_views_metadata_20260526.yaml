@@ -1,0 +1,54 @@
+# Optional metadata file for task text and episode-level tags.
+# One bag directory maps to one episode.
+
+default_task: Navigate around the room
+
+episodes:
+  rosbag2_2026_05_26-17_29_25:
+    task: Go to the table with brown cups.
+  rosbag2_2026_05_26-17_30_07:
+    task: From the table with brown cups, go to the table with a black cloth.
+  rosbag2_2026_05_26-17_31_02:
+    task: Go to the table with red cups.
+  rosbag2_2026_05_26-17_32_02:
+    task: From the table with red cups, go to the table with a black cloth.
+  rosbag2_2026_05_26-17_33_05:
+    task: Go to the table with a white jug.
+  rosbag2_2026_05_26-17_35_01:
+    task: From the table with a white jug, go to the table with a black cloth.
+  rosbag2_2026_05_26-17_37_06:
+    task: Go to the table with a white jug.
+  rosbag2_2026_05_26-17_39_05:
+    task: From the table with a white jug, go to the table with a black cloth.
+  rosbag2_2026_05_26-17_41_12:
+    task: Go to the table with a sandwich.
+  rosbag2_2026_05_26-17_44_09:
+    task: From the table with a sandwich, go to the table with a black cloth.
+  rosbag2_2026_05_26-17_45_45:
+    task: Go to the table with a sandwich.
+  rosbag2_2026_05_26-17_47_37:
+    task: From the table with a sandwich, go to the table with a black cloth.
+  rosbag2_2026_05_26-17_51_27:
+    task: Go to the table with brown cups.
+  rosbag2_2026_05_26-17_52_07:
+    task: From the table with brown cups, go to the table with a black cloth.
+  rosbag2_2026_05_26-17_53_00:
+    task: Go to the table with red cups.
+  rosbag2_2026_05_26-17_54_00:
+    task: From the table with red cups, go to the table with a black cloth.
+  rosbag2_2026_05_26-17_55_04:
+    task: Go to the table with a white jug.
+  rosbag2_2026_05_26-17_56_59: 
+    task: From the table with a white jug, go to the table with a black cloth.
+  rosbag2_2026_05_26-17_59_06:
+    task: Go to the table with a white jug.
+  rosbag2_2026_05_26-18_01_05:
+    task: From the table with a white jug, go to the table with a black cloth.
+  rosbag2_2026_05_26-18_03_03:
+    task: Go to the table with a sandwich.
+  rosbag2_2026_05_26-18_04_48:
+    task: From the table with a sandwich, go to the table with a black cloth.
+  rosbag2_2026_05_26-18_06_54:
+    task: Go to the table with a sandwich.
+  rosbag2_2026_05_26-18_08_39:
+    task: From the table with a sandwich, go to the table with a black cloth.

@@ -1,6 +1,9 @@
 from setuptools import find_packages, setup
+from pathlib import Path
 
 package_name = 'pi_bridge'
+
+config_files = [str(path) for path in Path('config').glob('*.yaml')]
 
 setup(
     name=package_name,
@@ -11,9 +14,10 @@ setup(
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
         ('share/' + package_name + '/launch', ['launch/websocket_bridge.launch.py']),
+        ('share/' + package_name + '/config', config_files),
         ('share/' + package_name, ['README.md']),
     ],
-    install_requires=['setuptools', 'numpy', 'msgpack', 'websockets>=11.0', 'typing_extensions'],
+    install_requires=['setuptools', 'numpy', 'msgpack', 'websockets>=11.0', 'websocket-client>=1.6.0', 'typing_extensions'],
     zip_safe=True,
     maintainer='ubuntu',
     maintainer_email='172489412+Bradley-ChenYiYu@users.noreply.github.com',
@@ -26,8 +30,14 @@ setup(
     },
     entry_points={
         'console_scripts': [
+            'tracer_bridge = pi_bridge.tracer_bridge:main',
+            'tracer_side_bridge = pi_bridge.tracer_side_bridge:main',
+            'tracer_front_left_bridge = pi_bridge.tracer_front_left_bridge:main',
+            'tracer_front_right_bridge = pi_bridge.tracer_front_right_bridge:main',
+            'task_flow_controller = pi_bridge.task_flow_controller:main',
             'websocket_bridge = pi_bridge.websocket_bridge_node:main',
             'random_test_publisher = pi_bridge.random_test_publisher:main',
+            'voice_command_node = pi_bridge.voice_command_node:main',
         ],
     },
 )
