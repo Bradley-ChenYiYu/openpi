@@ -15,6 +15,23 @@
 
 ---
 
+## Enviroment  
+
+1. Compose docker container for Pi server and ROS2 workspace:  
+
+    ```bash
+    docker compose -f examples/tracer/compose.yml up -d
+    ```
+
+2. Log in to the container:  
+
+    ```bash
+    docker exec -it {CONTAINER_NAME} bash
+    ```
+    - OpenPi container: tracer-openpi_server-1  
+    - ROS2 container: openpi_tracer  
+
+
 ## 1. 資料收集
 
 ### 1.1 啟動環境和遙控
@@ -42,8 +59,7 @@ ros2 run teleop_twist_keyboard teleop_twist_keyboard.py
 ros2 bag record -b 2147483648 -e "/cmd_vel|/odom|.*/color/(image_raw|camera_info)" -s sqlite3
 ```
 
-- 每段長度：10-60 秒
-- 建議收集 30-50 段演示
+- 每段最後錄製原地停下的動作 10~20 秒
 - 停止：`Ctrl+C`
 
 **參數說明：**
@@ -64,6 +80,10 @@ ros2 bag info rosbag_dir/
 ---
 
 ## 2. 數據轉換
+
+[此腳本](../scripts/run_training_from_raw_data.sh)包含第[2.4](#24-執行轉換),[3.1](#31-設置環境)~[3.4](#34-執行訓練)
+  - START_STEP: 設定從腳本中的第幾步驟開始
+  - Step 1 and step 2 建議跳過，還沒測試出預想結果
 
 ### 2.1 準備配置檔案
 
@@ -391,6 +411,10 @@ ros2 launch pi_bridge websocket_bridge.launch.py \
 
 ## 5. 語音命令集成
 
+### Whisper in Docker  
+
+This docker compose cmd let you skip step [1](#51-編譯-whispercpp)  
+
 ```bash
 AUDIO_GID=$(getent group audio | cut -d: -f3) \
   docker compose -f scripts/whisper.cpp/examples/command/compose.yml run --build --rm whisper bash
@@ -399,6 +423,8 @@ AUDIO_GID=$(getent group audio | cut -d: -f3) \
 如果想保留原本的 `docker run` 行為，這個 compose 檔案會等效地提供同樣的裝置、PulseAudio 和 host network 設定。
 
 ### 5.1 編譯 whisper.cpp
+
+Skip this step if you're using docker.
 
 ```bash
 cd scripts/whisper.cpp
@@ -414,9 +440,7 @@ make -j$(nproc)
 ### 5.2 下載模型
 
 ```bash
-mkdir -p ~/whisper_models
-cd ~/whisper_models
-wget https://huggingface.co/ggerganov/whisper.cpp/resolve/main/base.en.ggmlf16
+./scripts/whisper.cpp/models/download-ggml-model.sh base.en
 ```
 
 推薦模型：
@@ -428,8 +452,7 @@ wget https://huggingface.co/ggerganov/whisper.cpp/resolve/main/base.en.ggmlf16
 ### 5.3 啟動 Whisper 服務器
 
 ```bash
-cd scripts/whisper.cpp/build/bin
-./whisper-server -m ~/whisper_models/base.en.ggmlf16 -nt 8 -ps 128 -ct
+./build/bin/whisper-command --ws-enable -cmd examples/command/commands.txt | ./build/bin/command-ws-server
 ```
 
 ---
@@ -437,10 +460,7 @@ cd scripts/whisper.cpp/build/bin
 ### 5.4 啟動語音節點
 
 ```bash
-cd ros2_ws
-colcon build --packages-select pi_bridge
-source install/setup.bash
-ros2 run pi_bridge voice_command_node.py
+colcon build --packages-select pi_bridge && source install/setup.bash && ros2 run pi_bridge voice_command_node
 ```
 
 ---
@@ -464,10 +484,10 @@ ros2 run pi_bridge voice_command_node.py
 
 ```
 brown cups
+red cups
 sandwich
-kitchen
-stop
-wait
+white jug
+go back
 ```
 
 每個關鍵詞佔一行，whisper 將專注識別這些詞彙。

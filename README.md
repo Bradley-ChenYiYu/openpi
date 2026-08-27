@@ -416,7 +416,7 @@ We will collect common issues and their solutions here. If you encounter an issu
 1. Compose docker container for Pi server and ROS2 workspace:  
 
     ```bash
-    docker compose -f examples/tracer/compose.yml up
+    docker compose -f examples/tracer/compose.yml up -d
     ```
 
 2. Log in to the container:  
