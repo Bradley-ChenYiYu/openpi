@@ -119,6 +119,7 @@ class VoiceCommandNode(Node):
         self.declare_parameter("max_reconnect_interval_sec", 30.0)
         self.declare_parameter("command_probability_threshold", 0.2)
         self.declare_parameter("enable_auto_update", True)
+        self.declare_parameter("enable_request_action_flow", True)
 
         # Read parameters
         self._websocket_host = str(self.get_parameter("websocket_host").value)
@@ -128,6 +129,7 @@ class VoiceCommandNode(Node):
         self._max_reconnect_interval_sec = float(self.get_parameter("max_reconnect_interval_sec").value)
         self._probability_threshold = float(self.get_parameter("command_probability_threshold").value)
         self._enable_auto_update = bool(self.get_parameter("enable_auto_update").value)
+        self._enable_request_action_flow = bool(self.get_parameter("enable_request_action_flow").value)
 
         # Command state machine
         self._command_state_machine = CommandStateMachine()
@@ -296,7 +298,10 @@ class VoiceCommandNode(Node):
             
             # Create a request with Parameter objects
             request = SetParameters.Request()
-            request.parameters = [Parameter("prompt", value=prompt).to_parameter_msg()]
+            request.parameters = [
+                Parameter("prompt", value=prompt).to_parameter_msg(),
+                Parameter("enable_request_action_flow", value=self._enable_request_action_flow).to_parameter_msg(),
+            ]
             
             # Call async with callback
             future = self._param_client.call_async(request)
